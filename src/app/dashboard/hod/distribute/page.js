@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
 import { getCourses, getEnrollments, getStudents, getDepartments, getFinalResults, createResultDistribution, getResultDistributions, resetDemoWorkflow } from '../../../../lib/db'
-import { Send, Building2, Users, CheckCircle, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react'
+import { Send, Building2, Users, CheckCircle, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw, Inbox } from 'lucide-react'
+import Link from 'next/link'
 
 export default function HodDistributePage() {
   const { user } = useAuth()
@@ -73,6 +74,8 @@ export default function HodDistributePage() {
   const takingDepartmentIds = Object.keys(takingDeptMap)
 
   // Check if course is approved
+  const isOfferingDept = user?.department_id === 'd1111111-1111-1111-1111-111111111111' || !user?.department_id
+  const myDept = departments.find(d => d.id === user?.department_id)
   const courseFinals = finalResults.filter(f => f.course_id === selectedCourseId)
   const isApproved = courseFinals.length > 0 && courseFinals.some(r => r.status === 'approved' || r.status === 'distributed')
 
@@ -127,8 +130,29 @@ export default function HodDistributePage() {
         </div>
       )}
 
-      {/* Course Selection */}
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs mb-6">
+      {!isOfferingDept ? (
+        <div className="bg-white rounded-xl p-8 border border-slate-200 text-center max-w-xl mx-auto shadow-xs my-8">
+          <div className="w-12 h-12 bg-blue-50 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Inbox className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-900 mb-2">
+            Inter-Departmental Distribution Authority
+          </h3>
+          <p className="text-xs text-slate-600 mb-6 leading-relaxed">
+            In our distributed model, course distribution is initiated exclusively by the teaching department that offers the course (Computer Science). As the Head of Department for <strong>{myDept?.name || 'Mathematics'}</strong>, your role is to review and acknowledge incoming service course rosters sent to your students.
+          </p>
+          <Link
+            href="/dashboard/hod/acknowledge"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Go to Acknowledge Received Results &rarr;</span>
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* Course Selection */}
+          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs mb-6">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div className="flex-1 max-w-md">
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
@@ -259,6 +283,8 @@ export default function HodDistributePage() {
           </table>
         </div>
       </div>
+      </>
+      )}
     </DashboardLayout>
   )
 }

@@ -73,19 +73,34 @@ export default function HodResultsReviewPage() {
   }
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId)
-  const isDraft = finalResults.some(r => r.status === 'draft')
-  const isSubmitted = finalResults.some(r => r.status === 'submitted')
-  const isApproved = finalResults.length > 0 && finalResults.every(r => r.status === 'approved' || r.status === 'distributed')
-  const isDistributed = finalResults.length > 0 && finalResults.every(r => r.status === 'distributed')
+  const userDept = departments.find(d => d.id === user?.department_id)
+  
+  // Strict Departmental Scoping:
+  // Only the course-offering department (Computer Science) has broadsheet authority over all enrolled departments.
+  // Receiving departments (Maths, VTE, etc.) strictly view candidates from their own department.
+  const isOfferingDept = selectedCourse?.department_id === user?.department_id || 
+    (!selectedCourse?.department_id && user?.department_id === 'd1111111-1111-1111-1111-111111111111')
 
-  const submittedResults = finalResults.filter(r => r.status === 'submitted')
-  const otherResults = finalResults.filter(r => r.status !== 'submitted')
+  const displayedResults = isOfferingDept
+    ? finalResults
+    : finalResults.filter(r => {
+        const s = students.find(stud => stud.id === r.student_id)
+        return s && s.department_id === user?.department_id
+      })
 
-  // Calculate statistics
-  const totalStudents = finalResults.length
-  const passedStudents = finalResults.filter(r => r.grade !== 'F').length
+  const isDraft = displayedResults.some(r => r.status === 'draft')
+  const isSubmitted = displayedResults.some(r => r.status === 'submitted')
+  const isApproved = displayedResults.length > 0 && displayedResults.every(r => r.status === 'approved' || r.status === 'distributed')
+  const isDistributed = displayedResults.length > 0 && displayedResults.every(r => r.status === 'distributed')
+
+  const submittedResults = displayedResults.filter(r => r.status === 'submitted')
+  const otherResults = displayedResults.filter(r => r.status !== 'submitted')
+
+  // Calculate statistics for displayed candidates
+  const totalStudents = displayedResults.length
+  const passedStudents = displayedResults.filter(r => r.grade !== 'F').length
   const passRate = totalStudents > 0 ? ((passedStudents / totalStudents) * 100).toFixed(0) : 0
-  const avgScore = totalStudents > 0 ? (finalResults.reduce((acc, curr) => acc + Number(curr.total_score || 0), 0) / totalStudents).toFixed(1) : 0
+  const avgScore = totalStudents > 0 ? (displayedResults.reduce((acc, curr) => acc + Number(curr.total_score || 0), 0) / totalStudents).toFixed(1) : 0
 
   return (
     <DashboardLayout title="Departmental Result Review & Approval" roleRequired="hod">
@@ -117,35 +132,74 @@ export default function HodResultsReviewPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {(isDraft || isSubmitted) && (
-              <button
-                onClick={handleApprove}
-                disabled={approving || finalResults.length === 0}
-                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-emerald-600/20 transition disabled:opacity-50"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {approving ? 'Approving...' : 'Approve Department Results'}
-              </button>
-            )}
+            {isOfferingDept ? (
+              <>
+                {(isDraft || isSubmitted) && (
+                  <button
+                    onClick={handleApprove}
+                    disabled={approving || finalResults.length === 0}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-emerald-600/20 transition disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {approving ? 'Approving...' : 'Approve Department Results'}
+                  </button>
+                )}
 
-            {isApproved && (
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold">
-                  <ShieldCheck className="w-4 h-4 text-primary" />
-                  {isDistributed ? 'Status: Approved & Distributed' : 'Status: Approved'}
+                {isApproved && (
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold">
+                      <ShieldCheck className="w-4 h-4 text-primary" />
+                      {isDistributed ? 'Status: Approved & Distributed' : 'Status: Approved'}
+                    </span>
+                    <Link
+                      href={`/dashboard/hod/distribute?courseId=${selectedCourseId}`}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Proceed to Distribute
+                    </Link>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold">
+                  Borrowing / Service Department
                 </span>
                 <Link
-                  href={`/dashboard/hod/distribute?courseId=${selectedCourseId}`}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition"
+                  href="/dashboard/hod/acknowledge"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  Proceed to Distribute
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Acknowledge Roster &rarr;</span>
                 </Link>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {!isOfferingDept && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-blue-900">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+            <div>
+              <p className="font-bold">
+                Service Course Scope: Filtered to {userDept?.name || 'Department'} Students Only
+              </p>
+              <p className="text-blue-700 text-[11px] mt-0.5">
+                This course is offered by Computer Science. In accordance with the distributed governance model, your view is strictly filtered to candidates registered under your department ({userDept?.code}).
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/hod/acknowledge"
+            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shrink-0 text-center shadow-xs transition"
+          >
+            Go to Acknowledge Roster &rarr;
+          </Link>
+        </div>
+      )}
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -215,7 +269,11 @@ export default function HodResultsReviewPage() {
             <h3 className="text-base font-bold text-slate-900">
               Departmental Score Sheet: {selectedCourse?.code} - {selectedCourse?.title}
             </h3>
-            <p className="text-xs text-slate-500">Continuous Assessment (30%) + Examination (70%) Breakdown</p>
+            <p className="text-xs text-slate-500">
+              {isOfferingDept 
+                ? 'Full Course Roster (All Enrolled Departments) • Continuous Assessment (30%) + Exam (70%)' 
+                : `Service Course Breakdown for ${userDept?.name || 'Department'} Students Only`}
+            </p>
           </div>
         </div>
 
@@ -235,14 +293,16 @@ export default function HodResultsReviewPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {finalResults.length === 0 ? (
+              {displayedResults.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="py-8 text-center text-slate-400">
-                    No results have been compiled or submitted by the course lecturer yet.
+                    {isOfferingDept 
+                      ? 'No results have been compiled or submitted by the course lecturer yet.'
+                      : `No candidates from the Department of ${userDept?.name || 'your department'} took this course.`}
                   </td>
                 </tr>
               ) : (
-                finalResults.map((r) => {
+                displayedResults.map((r) => {
                   const s = students.find(stud => stud.id === r.student_id)
                   const dept = departments.find(d => d.id === s?.department_id)
 
