@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '../../../components/DashboardLayout'
-import { getDepartments, getStudents, getCourses, getUsers, getResultDistributions } from '../../../lib/db'
+import { getDepartments, getStudents, getCourses, getUsers, getResultDistributions, resetDemoWorkflow } from '../../../lib/db'
 import {
   Users,
   BookOpen,
@@ -14,7 +14,9 @@ import {
   PlusCircle,
   FileSpreadsheet,
   CheckCircle2,
-  Clock
+  Clock,
+  RotateCcw,
+  Sparkles
 } from 'lucide-react'
 
 export default function AdminDashboardPage() {
@@ -28,6 +30,24 @@ export default function AdminDashboardPage() {
   const [recentCourses, setRecentCourses] = useState([])
   const [departmentsList, setDepartmentsList] = useState([])
   const [loading, setLoading] = useState(true)
+  const [resetting, setResetting] = useState(false)
+  const [resetMessage, setResetMessage] = useState(null)
+
+  const handleResetDemo = async (stage) => {
+    setResetting(true)
+    setResetMessage(null)
+    try {
+      const res = await resetDemoWorkflow('COS 101', stage)
+      setResetMessage({ type: 'success', text: res.message })
+      const dists = await getResultDistributions()
+      setStats(prev => ({ ...prev, distributions: dists.length }))
+      setTimeout(() => setResetMessage(null), 6000)
+    } catch (err) {
+      setResetMessage({ type: 'error', text: 'Error resetting demo.' })
+    } finally {
+      setResetting(false)
+    }
+  }
 
   useEffect(() => {
     async function loadData() {
@@ -184,6 +204,51 @@ export default function AdminDashboardPage() {
             </span>
           </Link>
         </div>
+      </div>
+
+      {/* Defense Live Demo Control Center */}
+      <div className="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-xl p-5 text-white mb-8 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-sky-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-sky-300">Defense Live Demonstration Controls</span>
+            </div>
+            <h3 className="text-base font-bold text-white">Live Workflow Reset (COS 101 Service Course)</h3>
+            <p className="text-xs text-blue-200 mt-1 max-w-xl">
+              Use these buttons during defense rehearsal or live presentation to reset COS 101 to a fresh state so you can demonstrate the live upload, distribution, and acknowledgement flow in front of your examiners.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap gap-2">
+            <button
+              onClick={() => handleResetDemo('hod')}
+              disabled={resetting}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition shadow-sm disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{resetting ? 'Resetting...' : '1. Reset for HOD Distribution'}</span>
+            </button>
+
+            <button
+              onClick={() => handleResetDemo('lecturer')}
+              disabled={resetting}
+              className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition shadow-sm disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{resetting ? 'Resetting...' : '2. Reset for Lecturer Upload'}</span>
+            </button>
+          </div>
+        </div>
+
+        {resetMessage && (
+          <div className={`mt-3 p-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+            resetMessage.type === 'success' ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30' : 'bg-red-500/20 text-red-200 border border-red-400/30'
+          }`}>
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <span>{resetMessage.text}</span>
+          </div>
+        )}
       </div>
 
       {/* Overview Table */}

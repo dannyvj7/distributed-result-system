@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../lib/authContext'
-import { School, ShieldCheck, ArrowRight, UserCheck, AlertCircle, ChevronDown, ChevronUp, Sparkles, CheckCircle2 } from 'lucide-react'
+import { resetDemoWorkflow } from '../lib/db'
+import { School, ShieldCheck, ArrowRight, UserCheck, AlertCircle, ChevronDown, ChevronUp, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react'
 
 export default function StaffLoginPage() {
   const [email, setEmail] = useState('')
@@ -13,8 +14,37 @@ export default function StaffLoginPage() {
   const [submitting, setSubmitting] = useState(false)
   const [showDemoAccounts, setShowDemoAccounts] = useState(false)
   const [autofillNotice, setAutofillNotice] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [resetStatus, setResetStatus] = useState(null)
   const { loginStaff } = useAuth()
   const router = useRouter()
+
+  // Secret keyboard shortcut: Press Ctrl+D or Alt+D to toggle demo drawer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.altKey) && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault()
+        setShowDemoAccounts(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const handleResetDemo = async (stage) => {
+    setResetting(true)
+    setResetStatus(null)
+    try {
+      const res = await resetDemoWorkflow('COS 101', stage)
+      setResetStatus(stage === 'hod' ? 'COS 101 ready for HOD distribution!' : 'COS 101 ready for Lecturer upload!')
+      setTimeout(() => setResetStatus(null), 5000)
+    } catch (err) {
+      setResetStatus('Failed to reset demo.')
+      setTimeout(() => setResetStatus(null), 4000)
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault()
@@ -276,6 +306,50 @@ export default function StaffLoginPage() {
                       <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Receiver</span>
                     </button>
                   </div>
+                </div>
+
+                {/* Live Demo Workflow Reset Controls */}
+                <div className="pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Live Demo Reset Controls (COS 101)</span>
+                    </span>
+                    {resetStatus && (
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        {resetStatus}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleResetDemo('hod')}
+                      disabled={resetting}
+                      className="p-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-left transition flex flex-col justify-between"
+                    >
+                      <span className="font-bold text-emerald-900 block text-[11px]">
+                        {resetting ? 'Resetting...' : '1. Reset for HOD Demo'}
+                      </span>
+                      <span className="text-[9px] text-emerald-700">Ready to Distribute live</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleResetDemo('lecturer')}
+                      disabled={resetting}
+                      className="p-2 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg text-left transition flex flex-col justify-between"
+                    >
+                      <span className="font-bold text-amber-900 block text-[11px]">
+                        {resetting ? 'Resetting...' : '2. Reset for Lecturer'}
+                      </span>
+                      <span className="text-[9px] text-amber-700">Ready to Upload CA live</span>
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1 italic">
+                    Tip: Press <kbd className="font-mono bg-slate-200 px-1 rounded text-slate-700">Ctrl+D</kbd> anywhere to hide or show this drawer.
+                  </p>
                 </div>
               </div>
             )}

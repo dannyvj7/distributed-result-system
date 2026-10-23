@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
-import { getCourses, getEnrollments, getStudents, getDepartments, getFinalResults, createResultDistribution, getResultDistributions } from '../../../../lib/db'
-import { Send, Building2, Users, CheckCircle, AlertCircle, ShieldCheck, CheckCircle2 } from 'lucide-react'
+import { getCourses, getEnrollments, getStudents, getDepartments, getFinalResults, createResultDistribution, getResultDistributions, resetDemoWorkflow } from '../../../../lib/db'
+import { Send, Building2, Users, CheckCircle, AlertCircle, ShieldCheck, CheckCircle2, RotateCcw } from 'lucide-react'
 
 export default function HodDistributePage() {
   const { user } = useAuth()
@@ -103,6 +103,19 @@ export default function HodDistributePage() {
     }
   }
 
+  const handleResetForDemo = async () => {
+    if (!selectedCourse?.code) return
+    const res = await resetDemoWorkflow(selectedCourse.code, 'hod')
+    setStatusMessage({
+      type: 'success',
+      text: res.message || `${selectedCourse.code} reset for live distribution demo!`
+    })
+    const updatedDists = await getResultDistributions()
+    const updatedFinals = await getFinalResults()
+    setDistributions(updatedDists)
+    setFinalResults(updatedFinals)
+  }
+
   return (
     <DashboardLayout title="Inter-Departmental Result Distribution" roleRequired="hod">
       {statusMessage && (
@@ -132,7 +145,16 @@ export default function HodDistributePage() {
             </select>
           </div>
 
-          <div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleResetForDemo}
+              title="Reset this course so you can demonstrate the live distribution step again"
+              className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold border border-slate-300 transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+              <span>Reset Demo State</span>
+            </button>
+
             <button
               onClick={handleDistribute}
               disabled={distributing || !isApproved || takingDepartmentIds.length === 0}

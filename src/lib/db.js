@@ -1124,3 +1124,46 @@ export async function resolveComplaint(complaintId, responseText) {
   }
   return null
 }
+
+// ----------------- DEFENSE LIVE DEMO CONTROLS -----------------
+export async function resetDemoWorkflow(courseCode = 'COS 101', stage = 'hod') {
+  const local = getLocalData()
+  const crs = (local.courses || []).find(c => c.code === courseCode)
+  if (!crs) return { success: false, message: `Course ${courseCode} not found` }
+
+  const courseId = crs.id
+
+  // 1. Remove all distribution records for this course
+  local.result_distributions = (local.result_distributions || []).filter(d => d.course_id !== courseId)
+
+  // 2. Reset final_results status
+  const targetStatus = stage === 'lecturer' ? 'draft' : 'approved'
+  local.final_results = (local.final_results || []).map(r => {
+    if (r.course_id === courseId) {
+      return { ...r, status: targetStatus }
+    }
+    return r
+  })
+
+  saveLocalData(local)
+
+  // 3. Sync to Supabase
+  if (supabase) {
+    try {
+      await supabase.from('result_distributions').delete().eq('course_id', courseId)
+      await supabase.from('final_results').update({ status: targetStatus }).eq('course_id', courseId)
+    } catch (err) {
+      console.warn('Supabase resetDemoWorkflow sync warning:', err)
+    }
+  }
+
+  const stageDesc = stage === 'lecturer' 
+    ? 'Ready for Lecturer CA spreadsheet upload and scoring.' 
+    : 'Ready for live HOD distribution, receiving HOD acknowledgement, and Exam Officer archival.'
+
+  return {
+    success: true,
+    message: `${courseCode} demo reset successfully! ${stageDesc}`
+  }
+}
+
