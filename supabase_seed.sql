@@ -170,10 +170,10 @@ CREATE TABLE complaints (
 
 -- Departments
 INSERT INTO departments (id, name, code, faculty) VALUES
-('d1111111-1111-1111-1111-111111111111', 'Computer Science', 'COS', 'Faculty of Science'),
+('d1111111-1111-1111-1111-111111111111', 'Computer Science', 'COS', 'Faculty of Physical Sciences'),
 ('d2222222-2222-2222-2222-222222222222', 'Electrical & Electronics Engineering', 'EEE', 'Faculty of Engineering'),
 ('d3333333-3333-3333-3333-333333333333', 'Mechanical Engineering', 'MEE', 'Faculty of Engineering'),
-('d4444444-4444-4444-4444-444444444444', 'Mathematics', 'MTH', 'Faculty of Science');
+('d4444444-4444-4444-4444-444444444444', 'Mathematics', 'MTH', 'Faculty of Physical Sciences');
 
 -- Staff Users
 INSERT INTO users (id, email, password_hash, full_name, role, department_id) VALUES

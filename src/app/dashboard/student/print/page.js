@@ -117,21 +117,23 @@ export default function StudentPrintResultPage() {
     doc.text(`Department: ${department?.name?.toUpperCase()} (${department?.code})`, rightX, startY)
 
     startY += 18
-    doc.text(`Level of Study: ${student?.level || 400} Level`, leftX, startY)
-    doc.text(`Academic Session: ${student?.session || '2025/26'} • First Semester`, rightX, startY)
+    doc.text(`Level of Study: ${student?.level || 100} Level`, leftX, startY)
+    doc.text(`Academic Session: ${student?.session || '2025/26'}`, rightX, startY)
 
     // 3. Results Autotable
-    const headers = [['Course Code', 'Course Title', 'Units', 'Score', 'Grade', 'Point', 'Quality Points']]
+    const headers = [['Course Code', 'Course Title', 'Semester', 'Units', 'Score', 'Grade', 'Point', 'Quality Points']]
 
     const rows = results.map(r => {
       const course = courses.find(c => c.id === r.course_id)
       const units = Number(course?.credit_units || 3)
       const gp = Number(r.grade_point || 0)
       const qp = (units * gp).toFixed(1)
+      const sem = course?.semester === 'second' ? '2nd Sem' : '1st Sem'
 
       return [
-        course?.code || 'COS401',
-        course?.title || 'Distributed Systems',
+        course?.code || 'COS',
+        course?.title || 'Course Title',
+        sem,
         units,
         r.total_score,
         r.grade,
@@ -279,7 +281,7 @@ export default function StudentPrintResultPage() {
           <div>
             <span className="text-slate-400 block font-medium">Academic Session:</span>
             <span className="font-semibold text-slate-800">
-              {student?.session || '2025/26'} • First Semester • Level {student?.level || 400}L
+              {student?.session || '2025/26'} • Level {student?.level || 100}L
             </span>
           </div>
         </div>
@@ -291,6 +293,7 @@ export default function StudentPrintResultPage() {
               <tr>
                 <th className="py-2.5 px-4">Course Code</th>
                 <th className="py-2.5 px-4">Course Title</th>
+                <th className="py-2.5 px-4 text-center">Semester</th>
                 <th className="py-2.5 px-4 text-center">Units</th>
                 <th className="py-2.5 px-4 text-center">Total (/100)</th>
                 <th className="py-2.5 px-4 text-center">Grade</th>
@@ -304,11 +307,19 @@ export default function StudentPrintResultPage() {
                 const units = Number(course?.credit_units || 3)
                 const gp = Number(r.grade_point || 0)
                 const qp = (units * gp).toFixed(1)
+                const sem = course?.semester === 'second' ? '2nd Sem' : '1st Sem'
 
                 return (
                   <tr key={r.id}>
-                    <td className="py-3 px-4 font-mono font-bold text-primary">{course?.code || 'COS401'}</td>
-                    <td className="py-3 px-4 font-medium text-slate-900">{course?.title || 'Distributed Systems'}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-primary">{course?.code || 'COS'}</td>
+                    <td className="py-3 px-4 font-medium text-slate-900">{course?.title || 'Course Title'}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        course?.semester === 'second' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {sem}
+                      </span>
+                    </td>
                     <td className="py-3 px-4 text-center">{units}</td>
                     <td className="py-3 px-4 text-center font-bold">{r.total_score}</td>
                     <td className="py-3 px-4 text-center font-extrabold">{r.grade}</td>

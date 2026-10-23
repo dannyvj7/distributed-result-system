@@ -14,6 +14,7 @@ export default function StudentResultsPage() {
   const [courses, setCourses] = useState([])
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedSemester, setSelectedSemester] = useState('all') // 'all' | 'first' | 'second'
 
   useEffect(() => {
     async function loadData() {
@@ -48,11 +49,18 @@ export default function StudentResultsPage() {
     loadData()
   }, [user])
 
-  // Compute semester aggregates
+  // Filter results by selected semester
+  const filteredResults = results.filter(r => {
+    if (selectedSemester === 'all') return true
+    const course = courses.find(c => c.id === r.course_id)
+    return (course?.semester || 'first') === selectedSemester
+  })
+
+  // Compute semester aggregates based on filtered results
   let totalUnits = 0
   let totalQualityPoints = 0
 
-  results.forEach(r => {
+  filteredResults.forEach(r => {
     const course = courses.find(c => c.id === r.course_id)
     const units = Number(course?.credit_units || 3)
     const gp = Number(r.grade_point || 0)
@@ -60,7 +68,7 @@ export default function StudentResultsPage() {
     totalQualityPoints += (units * gp)
   })
 
-  const semesterGpa = totalUnits > 0 ? (totalQualityPoints / totalUnits).toFixed(2) : '0.00'
+  const computedGpa = totalUnits > 0 ? (totalQualityPoints / totalUnits).toFixed(2) : '0.00'
 
   return (
     <DashboardLayout title="Semester Result Statement" roleRequired="student">
@@ -68,14 +76,20 @@ export default function StudentResultsPage() {
       <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-xs mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold text-primary uppercase tracking-wider block">
-              Academic Session 2025/26 • First Semester
-            </span>
-            <h3 className="text-xl font-extrabold text-slate-900 mt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                Academic Session 2025/26
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                {selectedSemester === 'first' ? '1st Semester Only' : selectedSemester === 'second' ? '2nd Semester Only' : 'All Semesters'}
+              </span>
+            </div>
+            <h3 className="text-xl font-extrabold text-slate-900">
               {student?.full_name} ({student?.reg_number})
             </h3>
             <p className="text-xs text-slate-500 mt-0.5">
-              {department?.name} ({department?.code}) • Level {student?.level || 400}L
+              {department?.name} ({department?.code}) • Level {student?.level || 100}L
             </p>
           </div>
 
@@ -98,12 +112,53 @@ export default function StudentResultsPage() {
         </div>
       </div>
 
+      {/* Semester Filter Tabs */}
+      <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setSelectedSemester('all')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+            selectedSemester === 'all'
+              ? 'bg-primary text-white shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          All Semesters ({results.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedSemester('first')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+            selectedSemester === 'first'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          First Semester (1st Sem)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSelectedSemester('second')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+            selectedSemester === 'second'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          Second Semester (2nd Sem)
+        </button>
+      </div>
+
       {/* Summary KPI Bar */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Registered Units</p>
           <h4 className="text-2xl font-bold text-slate-900 mt-1">{totalUnits} Units</h4>
-          <span className="text-[11px] text-slate-500">First semester courses</span>
+          <span className="text-[11px] text-slate-500">
+            {selectedSemester === 'all' ? 'Across all enrolled semesters' : `${selectedSemester === 'first' ? '1st' : '2nd'} semester credit load`}
+          </span>
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs">
@@ -113,17 +168,24 @@ export default function StudentResultsPage() {
         </div>
 
         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-xs">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Semester GPA</p>
-          <h4 className="text-2xl font-bold text-emerald-600 mt-1">{semesterGpa} / 5.00</h4>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            {selectedSemester === 'all' ? 'Cumulative GPA' : 'Semester GPA'}
+          </p>
+          <h4 className="text-2xl font-bold text-emerald-600 mt-1">{computedGpa} / 5.00</h4>
           <span className="text-[11px] text-emerald-600 font-medium">Nigerian NUC 5.0 Scale</span>
         </div>
       </div>
 
       {/* Results Detailed Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-100">
-          <h3 className="text-base font-bold text-slate-900">Approved Course Grades</h3>
-          <p className="text-xs text-slate-500">Officially verified and approved by Departmental Board</p>
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Approved Course Grades</h3>
+            <p className="text-xs text-slate-500">Officially verified and approved by Departmental Board</p>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+            Showing {filteredResults.length} Course{filteredResults.length === 1 ? '' : 's'}
+          </span>
         </div>
 
         <div className="overflow-x-auto">
@@ -132,6 +194,7 @@ export default function StudentResultsPage() {
               <tr>
                 <th className="py-3.5 px-6">Course Code</th>
                 <th className="py-3.5 px-6">Course Title</th>
+                <th className="py-3.5 px-6">Semester</th>
                 <th className="py-3.5 px-6">Credit Units</th>
                 <th className="py-3.5 px-6">CA (0-30)</th>
                 <th className="py-3.5 px-6">Exam (0-70)</th>
@@ -144,25 +207,35 @@ export default function StudentResultsPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-400">Loading semester records...</td>
+                  <td colSpan="10" className="py-8 text-center text-slate-400">Loading semester records...</td>
                 </tr>
-              ) : results.length === 0 ? (
+              ) : filteredResults.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="py-8 text-center text-slate-400">
-                    No approved results on record for this student.
+                  <td colSpan="10" className="py-8 text-center text-slate-400">
+                    No approved results on record for {selectedSemester === 'all' ? 'this student' : `${selectedSemester} semester`}.
                   </td>
                 </tr>
               ) : (
-                results.map((r) => {
+                filteredResults.map((r) => {
                   const course = courses.find(c => c.id === r.course_id)
                   const units = Number(course?.credit_units || 3)
                   const gp = Number(r.grade_point || 0)
                   const qp = (units * gp).toFixed(1)
+                  const sem = course?.semester || 'first'
 
                   return (
                     <tr key={r.id} className="hover:bg-slate-50/70 transition">
-                      <td className="py-4 px-6 font-bold text-primary">{course?.code || 'COS401'}</td>
-                      <td className="py-4 px-6 font-semibold text-slate-900">{course?.title || 'Distributed Systems'}</td>
+                      <td className="py-4 px-6 font-bold text-primary">{course?.code || 'COS'}</td>
+                      <td className="py-4 px-6 font-semibold text-slate-900">{course?.title || 'Course Title'}</td>
+                      <td className="py-4 px-6">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                          sem === 'second'
+                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                            : 'bg-blue-50 text-blue-700 border border-blue-200'
+                        }`}>
+                          {sem === 'second' ? '2nd Sem' : '1st Sem'}
+                        </span>
+                      </td>
                       <td className="py-4 px-6">{units} Units</td>
                       <td className="py-4 px-6 text-emerald-700 font-semibold">{r.ca_score}</td>
                       <td className="py-4 px-6 text-blue-700 font-semibold">{r.exam_score}</td>

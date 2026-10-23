@@ -30,7 +30,14 @@ export default function HodAcknowledgePage() {
           getFinalResults(),
           getStudents()
         ])
-        setDistributions(dists)
+        
+        // Strict isolation: Receiving HOD only sees transmissions intended for their department
+        const myDeptId = user?.department_id
+        const filteredDists = myDeptId
+          ? dists.filter(d => d.received_by_dept_id === myDeptId)
+          : dists
+
+        setDistributions(filteredDists)
         setCourses(crs)
         setDepartments(depts)
         setHodProfile(profile)
@@ -41,13 +48,15 @@ export default function HodAcknowledgePage() {
         const params = new URLSearchParams(window.location.search)
         const urlDistId = params.get('distId')
 
-        const pending = dists.filter(d => d.status === 'sent')
-        if (urlDistId && dists.some(d => d.id === urlDistId)) {
+        const pending = filteredDists.filter(d => d.status === 'sent')
+        if (urlDistId && filteredDists.some(d => d.id === urlDistId)) {
           setSelectedDistId(urlDistId)
         } else if (pending.length > 0) {
           setSelectedDistId(pending[0].id)
-        } else if (dists.length > 0) {
-          setSelectedDistId(dists[0].id)
+        } else if (filteredDists.length > 0) {
+          setSelectedDistId(filteredDists[0].id)
+        } else {
+          setSelectedDistId('')
         }
       } finally {
         setLoading(false)
@@ -59,7 +68,7 @@ export default function HodAcknowledgePage() {
   const selectedDist = distributions.find(d => d.id === selectedDistId)
   const selectedCourse = courses.find(c => c.id === selectedDist?.course_id)
   const senderDept = departments.find(d => d.id === selectedCourse?.department_id) || departments[0]
-  const recipientDept = departments.find(d => d.id === selectedDist?.received_by_dept_id) || departments[1]
+  const recipientDept = departments.find(d => d.id === selectedDist?.received_by_dept_id) || (user?.department_id ? departments.find(d => d.id === user.department_id) : departments[1])
 
   const isAlreadyAcknowledged = selectedDist?.status === 'acknowledged'
 
@@ -75,7 +84,8 @@ export default function HodAcknowledgePage() {
 
       // Refresh
       const updated = await getResultDistributions()
-      setDistributions(updated)
+      const myDeptId = user?.department_id
+      setDistributions(myDeptId ? updated.filter(d => d.received_by_dept_id === myDeptId) : updated)
     } catch (err) {
       setStatusMessage({ type: 'error', text: 'Error acknowledging distribution.' })
     } finally {
@@ -83,8 +93,13 @@ export default function HodAcknowledgePage() {
     }
   }
 
-  // Filter student scores belonging to this course
-  const courseStudents = finalResults.filter(r => r.course_id === selectedDist?.course_id)
+  // Strict isolation: Filter student scores belonging to this course AND strictly to this receiving department
+  const targetDeptId = selectedDist?.received_by_dept_id || user?.department_id
+  const courseStudents = finalResults.filter(r => {
+    if (r.course_id !== selectedDist?.course_id) return false
+    const s = students.find(stud => stud.id === r.student_id)
+    return s && (!targetDeptId || s.department_id === targetDeptId)
+  })
 
   return (
     <DashboardLayout title="Acknowledge Received Results" roleRequired="hod">
@@ -159,14 +174,15 @@ export default function HodAcknowledgePage() {
               </div>
               <div>
                 <span className="text-slate-400 block font-medium">Enrolled Candidates:</span>
-                <span className="font-semibold text-slate-700">{courseStudents.length} Students Examined</span>
+                <span className="font-semibold text-slate-700">{courseStudents.length} Students Examined ({recipientDept?.name || 'Department'})</span>
               </div>
             </div>
 
             {/* Scores Table */}
             <div className="p-6">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
-                Candidate Score Breakdown
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3 flex items-center justify-between">
+                <span>Candidate Score Breakdown ({recipientDept?.code || 'Dept'} Only)</span>
+                <span className="text-[11px] font-normal text-slate-500">Only showing students from {recipientDept?.name}</span>
               </h4>
               <div className="border border-slate-200 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
                 <table className="w-full text-left text-xs text-slate-600">
@@ -181,19 +197,27 @@ export default function HodAcknowledgePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {courseStudents.map((r, idx) => {
-                      const stud = students.find(s => s.id === r.student_id)
-                      return (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="py-2.5 px-3 font-mono font-bold text-primary">{stud?.reg_number}</td>
-                          <td className="py-2.5 px-3 font-medium text-slate-900">{stud?.full_name}</td>
-                          <td className="py-2.5 px-3">{r.ca_score}</td>
-                          <td className="py-2.5 px-3">{r.exam_score}</td>
-                          <td className="py-2.5 px-3 font-bold text-slate-900">{r.total_score}</td>
-                          <td className="py-2.5 px-3 font-bold">{r.grade}</td>
-                        </tr>
-                      )
-                    })}
+                    {courseStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="py-8 text-center text-slate-400">
+                          No students from {recipientDept?.name || 'your department'} took this course.
+                        </td>
+                      </tr>
+                    ) : (
+                      courseStudents.map((r, idx) => {
+                        const stud = students.find(s => s.id === r.student_id)
+                        return (
+                          <tr key={idx} className="hover:bg-slate-50">
+                            <td className="py-2.5 px-3 font-mono font-bold text-primary">{stud?.reg_number}</td>
+                            <td className="py-2.5 px-3 font-medium text-slate-900">{stud?.full_name}</td>
+                            <td className="py-2.5 px-3">{r.ca_score}</td>
+                            <td className="py-2.5 px-3">{r.exam_score}</td>
+                            <td className="py-2.5 px-3 font-bold text-slate-900">{r.total_score}</td>
+                            <td className="py-2.5 px-3 font-bold">{r.grade}</td>
+                          </tr>
+                        )
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

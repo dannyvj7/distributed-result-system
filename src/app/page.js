@@ -4,18 +4,20 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '../lib/authContext'
-import { School, ShieldCheck, ArrowRight, UserCheck, AlertCircle } from 'lucide-react'
+import { School, ShieldCheck, ArrowRight, UserCheck, AlertCircle, ChevronDown, ChevronUp, Sparkles, CheckCircle2 } from 'lucide-react'
 
 export default function StaffLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const { loginStaff, switchPersona } = useAuth()
+  const [showDemoAccounts, setShowDemoAccounts] = useState(false)
+  const [autofillNotice, setAutofillNotice] = useState('')
+  const { loginStaff } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setError('')
     setSubmitting(true)
     try {
@@ -27,15 +29,18 @@ export default function StaffLoginPage() {
     }
   }
 
-  const handleQuickLogin = async (role) => {
+  const handleAutofill = (staffEmail, label, autoSubmit = false) => {
+    setEmail(staffEmail)
+    setPassword('password123')
     setError('')
-    setSubmitting(true)
-    try {
-      await switchPersona(role)
-    } catch (err) {
-      setError(err.message || 'Quick login failed')
-    } finally {
-      setSubmitting(false)
+    setAutofillNotice(`Loaded credentials for: ${label}`)
+    
+    if (autoSubmit) {
+      setSubmitting(true)
+      loginStaff(staffEmail, 'password123').catch(err => {
+        setError(err.message || 'Login failed')
+        setSubmitting(false)
+      })
     }
   }
 
@@ -59,6 +64,16 @@ export default function StaffLoginPage() {
             <div className="mb-5 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2.5 text-sm text-red-700">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {autofillNotice && (
+            <div className="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 font-semibold flex items-center justify-between animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                <span>{autofillNotice}</span>
+              </div>
+              <span className="text-[10px] bg-primary text-white px-2 py-0.5 rounded font-bold">Auto-filled</span>
             </div>
           )}
 
@@ -101,45 +116,169 @@ export default function StaffLoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Login Picker */}
-          <div className="mt-6 pt-6 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider text-center mb-3">
-              One-Click Demo Test Accounts
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin')}
-                className="p-2 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 font-medium text-slate-700 text-left transition flex items-center justify-between"
-              >
-                <span>ICT Admin</span>
-                <span className="text-[10px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded">Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('lecturer')}
-                className="p-2 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 font-medium text-slate-700 text-left transition flex items-center justify-between"
-              >
-                <span>CSC Lecturer</span>
-                <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Lecturer</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('hod')}
-                className="p-2 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 font-medium text-slate-700 text-left transition flex items-center justify-between"
-              >
-                <span>CSC HOD</span>
-                <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">HOD</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('exam_officer')}
-                className="p-2 border border-slate-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 font-medium text-slate-700 text-left transition flex items-center justify-between"
-              >
-                <span>Exam Officer</span>
-                <span className="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">Officer</span>
-              </button>
-            </div>
+          {/* Defense Evaluation Drawer (Collapsible) */}
+          <div className="mt-6 pt-5 border-t border-slate-200">
+            <button
+              type="button"
+              onClick={() => setShowDemoAccounts(!showDemoAccounts)}
+              className="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-between transition"
+            >
+              <span className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span>Defense Demonstration Accounts (Auto-fill)</span>
+              </span>
+              {showDemoAccounts ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+            </button>
+
+            {showDemoAccounts && (
+              <div className="mt-3 p-3 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3 animate-in fade-in">
+                {/* Central Admins */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Central Institutional Administration
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('admin@institution.edu.ng', 'ICT Administrator')}
+                      className="p-2 bg-white border border-slate-200 hover:border-blue-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-800">ICT Admin</span>
+                      <span className="text-[9px] bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded">Fill</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('exam.officer@institution.edu.ng', 'Central Exam Officer')}
+                      className="p-2 bg-white border border-slate-200 hover:border-purple-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-800">Exam Officer</span>
+                      <span className="text-[9px] bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">Fill</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Course Lecturers */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Allocated Course Lecturers (COS 101 – COS 414)
+                  </p>
+                  <div className="space-y-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('lecturer.csc@institution.edu.ng', 'Dr. Aminu Ibrahim (COS 101)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:border-emerald-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800 block">Dr. Aminu Ibrahim</span>
+                        <span className="text-[10px] text-slate-500">COS 101 • 1st Sem • 100L</span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-bold">Auto-fill</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('lecturer.eze@institution.edu.ng', 'Dr. Ngozi Eze (COS 201)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:border-sky-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800 block">Dr. Ngozi Eze</span>
+                        <span className="text-[10px] text-slate-500">COS 201 • 1st Sem • 200L</span>
+                      </div>
+                      <span className="text-[10px] bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded font-bold">Auto-fill</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('lecturer.fashola@institution.edu.ng', 'Dr. Babatunde Fashola (COS 202)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:border-purple-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800 block">Dr. Babatunde Fashola</span>
+                        <span className="text-[10px] text-slate-500">COS 202 • 2nd Sem • 200L</span>
+                      </div>
+                      <span className="text-[10px] bg-purple-50 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-bold">Auto-fill</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('lecturer.ugwu@institution.edu.ng', 'Dr. Ifeanyi Ugwu (COS 343)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:border-amber-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800 block">Dr. Ifeanyi Ugwu</span>
+                        <span className="text-[10px] text-slate-500">COS 343 • 1st Sem • 300L</span>
+                      </div>
+                      <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">Auto-fill</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('lecturer.akpan@institution.edu.ng', 'Prof. Chukwuma Akpan (COS 414)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:border-indigo-400 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800 block">Prof. Chukwuma Akpan</span>
+                        <span className="text-[10px] text-slate-500">COS 414 • 2nd Sem • 400L</span>
+                      </div>
+                      <span className="text-[10px] bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded font-bold">Auto-fill</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Departmental HODs */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Departmental Heads (HODs)
+                  </p>
+                  <div className="space-y-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('hod.csc@institution.edu.ng', 'Prof. B. Adeleke (Computer Science HOD)')}
+                      className="w-full p-2 bg-white border border-blue-200 hover:bg-blue-50/50 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-900">1. Computer Science HOD (Prof. B. Adeleke)</span>
+                      <span className="text-[9px] bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded font-bold">Sender</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('hod.mth@institution.edu.ng', 'Dr. C. Okeke (Mathematics HOD)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-800">2. Mathematics HOD (Dr. C. Okeke)</span>
+                      <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Receiver</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('hod.vte@institution.edu.ng', 'Prof. A. O. Eze (VTE HOD)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-800">3. VTE HOD (Prof. A. O. Eze)</span>
+                      <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Receiver</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('hod.crb@institution.edu.ng', 'Dr. G. Danjuma (Robotics HOD)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-800">4. Robotics HOD (Dr. G. Danjuma)</span>
+                      <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Receiver</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAutofill('hod.sta@institution.edu.ng', 'Prof. K. C. Ugwu (Statistics HOD)')}
+                      className="w-full p-2 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg text-left transition flex items-center justify-between"
+                    >
+                      <span className="font-semibold text-slate-800">5. Statistics HOD (Prof. K. C. Ugwu)</span>
+                      <span className="text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-bold">Receiver</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Student Link */}

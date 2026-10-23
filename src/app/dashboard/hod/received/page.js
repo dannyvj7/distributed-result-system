@@ -39,11 +39,11 @@ export default function HodReceivedResultsPage() {
     loadData()
   }, [])
 
-  const myDeptId = user?.department_id || departments[0]?.id
+  const myDeptId = user?.department_id
+  const myDept = departments.find(d => d.id === myDeptId)
 
-  // Distributions received by this department
-  // For demo/inspection, include distributions where received_by_dept_id matches this dept, or all incoming distributions
-  const receivedList = distributions.filter(d => d.received_by_dept_id === myDeptId || d.status === 'sent')
+  // Distributions received strictly by this department
+  const receivedList = distributions.filter(d => !myDeptId || d.received_by_dept_id === myDeptId)
 
   return (
     <DashboardLayout title="Received Inter-Departmental Results" roleRequired="hod">
@@ -136,69 +136,87 @@ export default function HodReceivedResultsPage() {
       </div>
 
       {/* Scores Inspection Modal */}
-      {selectedDist && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  Course Result Sheet: {courses.find(c => c.id === selectedDist.course_id)?.code || 'COS401'}
-                </h3>
-                <p className="text-xs text-slate-500">Distributed departmental score roster</p>
+      {selectedDist && (() => {
+        const modalTargetDeptId = selectedDist.received_by_dept_id || myDeptId
+        const modalDept = departments.find(d => d.id === modalTargetDeptId)
+        const modalScores = finalResults.filter(r => {
+          if (r.course_id !== selectedDist.course_id) return false
+          const stud = students.find(s => s.id === r.student_id)
+          return stud && (!modalTargetDeptId || stud.department_id === modalTargetDeptId)
+        })
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Course Result Sheet: {courses.find(c => c.id === selectedDist.course_id)?.code || 'COS401'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Departmental Score Roster &bull; {modalDept?.name || 'Department'} ({modalScores.length} Candidate{modalScores.length === 1 ? '' : 's'})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedDist(null)}
+                  className="text-sm font-semibold text-slate-500 hover:text-slate-900 p-1"
+                >
+                  Close
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedDist(null)}
-                className="text-sm font-semibold text-slate-500 hover:text-slate-900 p-1"
-              >
-                Close
-              </button>
-            </div>
 
-            <div className="py-4 overflow-y-auto flex-1">
-              <table className="w-full text-left text-xs text-slate-600">
-                <thead className="bg-slate-50 font-bold text-slate-700 border-b border-slate-200">
-                  <tr>
-                    <th className="py-2 px-3">Reg Number</th>
-                    <th className="py-2 px-3">Student Name</th>
-                    <th className="py-2 px-3">CA (/30)</th>
-                    <th className="py-2 px-3">Exam (/70)</th>
-                    <th className="py-2 px-3">Total (/100)</th>
-                    <th className="py-2 px-3">Grade</th>
-                    <th className="py-2 px-3">Grade Point</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {finalResults
-                    .filter(r => r.course_id === selectedDist.course_id)
-                    .map((r, idx) => {
-                      const stud = students.find(s => s.id === r.student_id)
-                      return (
-                        <tr key={idx}>
-                          <td className="py-2.5 px-3 font-mono font-bold text-primary">{stud?.reg_number}</td>
-                          <td className="py-2.5 px-3 font-medium text-slate-900">{stud?.full_name}</td>
-                          <td className="py-2.5 px-3 font-semibold text-emerald-700">{r.ca_score}</td>
-                          <td className="py-2.5 px-3 font-semibold text-blue-700">{r.exam_score}</td>
-                          <td className="py-2.5 px-3 font-extrabold text-slate-900">{r.total_score}</td>
-                          <td className="py-2.5 px-3 font-bold">{r.grade}</td>
-                          <td className="py-2.5 px-3 font-bold">{Number(r.grade_point).toFixed(1)}</td>
-                        </tr>
-                      )
-                    })}
-                </tbody>
-              </table>
-            </div>
+              <div className="py-4 overflow-y-auto flex-1">
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="bg-slate-50 font-bold text-slate-700 border-b border-slate-200">
+                    <tr>
+                      <th className="py-2 px-3">Reg Number</th>
+                      <th className="py-2 px-3">Student Name</th>
+                      <th className="py-2 px-3">CA (/30)</th>
+                      <th className="py-2 px-3">Exam (/70)</th>
+                      <th className="py-2 px-3">Total (/100)</th>
+                      <th className="py-2 px-3">Grade</th>
+                      <th className="py-2 px-3">Grade Point</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {modalScores.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="py-8 text-center text-slate-400">
+                          No students from {modalDept?.name || 'this department'} registered for this course.
+                        </td>
+                      </tr>
+                    ) : (
+                      modalScores.map((r, idx) => {
+                        const stud = students.find(s => s.id === r.student_id)
+                        return (
+                          <tr key={idx}>
+                            <td className="py-2.5 px-3 font-mono font-bold text-primary">{stud?.reg_number}</td>
+                            <td className="py-2.5 px-3 font-medium text-slate-900">{stud?.full_name}</td>
+                            <td className="py-2.5 px-3 font-semibold text-emerald-700">{r.ca_score}</td>
+                            <td className="py-2.5 px-3 font-semibold text-blue-700">{r.exam_score}</td>
+                            <td className="py-2.5 px-3 font-extrabold text-slate-900">{r.total_score}</td>
+                            <td className="py-2.5 px-3 font-bold">{r.grade}</td>
+                            <td className="py-2.5 px-3 font-bold">{Number(r.grade_point).toFixed(1)}</td>
+                          </tr>
+                        )
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-            <div className="flex justify-end pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setSelectedDist(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition"
-              >
-                Done
-              </button>
+              <div className="flex justify-end pt-3 border-t border-slate-100">
+                <button
+                  onClick={() => setSelectedDist(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </DashboardLayout>
   )
 }

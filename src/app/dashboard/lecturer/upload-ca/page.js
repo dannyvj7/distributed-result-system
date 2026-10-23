@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import DashboardLayout from '../../../../components/DashboardLayout'
-import { getCourses, getStudents, getExamScores, saveCaScores, saveFinalResults, getFinalResults } from '../../../../lib/db'
+import { useAuth } from '../../../../lib/authContext'
+import { getCourses, getStudents, getExamScores, getCaScores, saveCaScores, saveFinalResults, getFinalResults } from '../../../../lib/db'
 import { calculateGrade, normalizeRegNumber } from '../../../../lib/grading'
 import {
   FileCheck,
@@ -19,11 +20,13 @@ import {
 } from 'lucide-react'
 
 export default function UploadCaScoresPage() {
+  const { user } = useAuth()
   const [courses, setCourses] = useState([])
   const [students, setStudents] = useState([])
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [courseExamScores, setCourseExamScores] = useState([])
   const [existingFinalResults, setExistingFinalResults] = useState([])
+  const [existingCaScores, setExistingCaScores] = useState([])
 
   // CA Parsing & Merging states
   const [fileName, setFileName] = useState('')
@@ -32,17 +35,25 @@ export default function UploadCaScoresPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
+  const [activeTab, setActiveTab] = useState('upload') // 'upload' | 'records'
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [crs, studs] = await Promise.all([getCourses(), getStudents()])
-        setCourses(crs)
+        const [allCrs, studs] = await Promise.all([getCourses(), getStudents()])
+        
+        // Strictly filter to courses allocated to this logged-in lecturer
+        let myCourses = allCrs.filter(c => c.lecturer_id === user?.id)
+        if (myCourses.length === 0 && user?.role === 'lecturer') {
+          myCourses = allCrs.slice(0, 1) // Safe fallback
+        }
+
+        setCourses(myCourses)
         setStudents(studs)
-        if (crs.length > 0) {
+        if (myCourses.length > 0) {
           const params = new URLSearchParams(window.location.search)
           const urlCourseId = params.get('courseId')
-          const initialCourse = crs.find(c => c.id === urlCourseId) || crs[0]
+          const initialCourse = myCourses.find(c => c.id === urlCourseId) || myCourses[0]
           setSelectedCourseId(initialCourse.id)
           loadCourseScores(initialCourse.id)
         }
@@ -51,15 +62,17 @@ export default function UploadCaScoresPage() {
       }
     }
     loadData()
-  }, [])
+  }, [user])
 
   const loadCourseScores = async (courseId) => {
-    const [exams, finals] = await Promise.all([
+    const [exams, finals, cas] = await Promise.all([
       getExamScores(courseId),
-      getFinalResults(courseId)
+      getFinalResults(courseId),
+      getCaScores(courseId)
     ])
     setCourseExamScores(exams)
     setExistingFinalResults(finals)
+    setExistingCaScores(cas)
   }
 
   const handleCourseChange = (courseId) => {
@@ -89,7 +102,7 @@ export default function UploadCaScoresPage() {
         const unmatched = []
 
         rawJson.forEach((row) => {
-          const rawReg = row.reg_number || row.RegNumber || row['Reg Number'] || row.matric || ''
+          const rawReg = row.reg_number || row.RegNumber || row['Reg Number'] || row.matric || row.matric_number || row['Matric Number'] || row.reg_no || ''
           const rawCa = row.ca_score || row.CaScore || row['CA Score'] || row.ca || row.score || 0
           const normalizedReg = normalizeRegNumber(rawReg)
 
@@ -98,48 +111,63 @@ export default function UploadCaScoresPage() {
           // 1. Locate student in registry
           const studentObj = students.find(s => normalizeRegNumber(s.reg_number) === normalizedReg)
           const numCa = Number(rawCa)
-          const validCa = !isNaN(numCa) && numCa >= 0 && numCa <= 30 ? numCa : 0
+          const isValidCa = !isNaN(numCa) && numCa >= 0 && numCa <= 30
 
           if (!studentObj) {
             unmatched.push({
               reg_number: normalizedReg,
-              ca_score: validCa,
-              reason: 'Matric number not found in institutional student registry'
+              student_name: 'Unknown Student',
+              ca_score: isValidCa ? numCa : rawCa,
+              reason: 'Registration number not found in student registry'
             })
             return
           }
 
-          // 2. Match with existing Exam Score for this course
-          const examRecord = courseExamScores.find(es => es.student_id === studentObj.id)
-
-          if (!examRecord) {
+          if (!isValidCa) {
             unmatched.push({
               reg_number: normalizedReg,
               student_name: studentObj.full_name,
-              ca_score: validCa,
-              reason: 'No corresponding Exam score uploaded yet for this student'
+              ca_score: rawCa,
+              reason: 'CA score must be between 0 and 30 marks'
             })
             return
           }
 
-          // 3. Compute total_score = ca_score + exam_score
-          const examScore = Number(examRecord.exam_score) || 0
-          const totalScore = validCa + examScore
+          // 2. Check for existing Exam Score for this course
+          const examRecord = courseExamScores.find(es => es.student_id === studentObj.id)
 
-          // 4. Compute grade and grade_point using NUC 5-point scale
-          const { grade, gradePoint, description } = calculateGrade(totalScore)
+          if (examRecord) {
+            const examScore = Number(examRecord.exam_score) || 0
+            const totalScore = numCa + examScore
+            const { grade, gradePoint, description } = calculateGrade(totalScore)
 
-          matched.push({
-            student_id: studentObj.id,
-            reg_number: normalizedReg,
-            student_name: studentObj.full_name,
-            ca_score: validCa,
-            exam_score: examScore,
-            total_score: totalScore,
-            grade,
-            grade_point: gradePoint,
-            grade_description: description
-          })
+            matched.push({
+              student_id: studentObj.id,
+              reg_number: studentObj.reg_number,
+              student_name: studentObj.full_name,
+              ca_score: numCa,
+              exam_score: examScore,
+              total_score: totalScore,
+              grade,
+              grade_point: gradePoint,
+              grade_description: description,
+              hasExam: true
+            })
+          } else {
+            // Exam not uploaded yet - still accept and record CA score!
+            matched.push({
+              student_id: studentObj.id,
+              reg_number: studentObj.reg_number,
+              student_name: studentObj.full_name,
+              ca_score: numCa,
+              exam_score: 0,
+              total_score: null,
+              grade: '-',
+              grade_point: 0,
+              grade_description: 'CA Saved (Exam Pending)',
+              hasExam: false
+            })
+          }
         })
 
         setMatchedResults(matched)
@@ -156,7 +184,7 @@ export default function UploadCaScoresPage() {
     if (!selectedCourseId || matchedResults.length === 0) return
     setSaving(true)
     try {
-      // 1. Save CA scores
+      // 1. Save all valid CA scores
       const caPayload = matchedResults.map(r => ({
         student_id: r.student_id,
         course_id: selectedCourseId,
@@ -165,8 +193,8 @@ export default function UploadCaScoresPage() {
       }))
       await saveCaScores(caPayload)
 
-      // 2. Save Final Results (Status: 'draft' ready for HOD review)
-      const finalPayload = matchedResults.map(r => ({
+      // 2. For students with exam scores already on record, compile Final Results (Status: 'draft')
+      const mergedToSave = matchedResults.filter(r => r.hasExam).map(r => ({
         student_id: r.student_id,
         course_id: selectedCourseId,
         ca_score: r.ca_score,
@@ -177,33 +205,54 @@ export default function UploadCaScoresPage() {
         status: 'draft',
         session: '2025/26'
       }))
-      await saveFinalResults(finalPayload)
 
-      setStatusMessage({
-        type: 'success',
-        text: `Success! ${matchedResults.length} merged course results compiled and submitted as draft for HOD approval.`
-      })
+      if (mergedToSave.length > 0) {
+        await saveFinalResults(mergedToSave)
+      }
+
+      const mergedCount = mergedToSave.length
+      const pendingCount = matchedResults.length - mergedCount
+
+      let msg = `Success! ${matchedResults.length} CA score(s) saved.`
+      if (mergedCount > 0 && pendingCount === 0) {
+        msg = `Success! ${matchedResults.length} CA scores saved and auto-merged into final draft results for HOD approval.`
+      } else if (mergedCount > 0 && pendingCount > 0) {
+        msg = `Success! ${matchedResults.length} CA scores saved (${mergedCount} merged into final results, ${pendingCount} pending exam upload).`
+      } else {
+        msg = `Success! ${matchedResults.length} CA scores recorded. Upload exam scores to automatically merge them into final grades.`
+      }
+
+      setStatusMessage({ type: 'success', text: msg })
       loadCourseScores(selectedCourseId)
       setMatchedResults([])
       setUnmatchedRows([])
       setFileName('')
     } catch (err) {
-      setStatusMessage({ type: 'error', text: 'Failed to commit merged results.' })
+      setStatusMessage({ type: 'error', text: 'Failed to commit CA scores.' })
     } finally {
       setSaving(false)
     }
   }
 
   const downloadSampleTemplate = () => {
-    const sample = [
-      { reg_number: '2022/234567', ca_score: 25 },
-      { reg_number: '2022/234568', ca_score: 22 },
-      { reg_number: '2022/235001', ca_score: 20 }
-    ]
+    const selectedCourse = courses.find(c => c.id === selectedCourseId)
+    const courseCode = selectedCourse?.code || ''
+    const courseLevel = courseCode.includes('101') ? 100
+      : (courseCode.includes('201') || courseCode.includes('202')) ? 200
+      : courseCode.includes('343') ? 300
+      : courseCode.includes('414') ? 400
+      : null
+
+    const levelStudents = students.filter(s => courseLevel ? Number(s.level) === courseLevel : true)
+    const sample = (levelStudents.length > 0 ? levelStudents : students.slice(0, 5)).map((s, idx) => ({
+      reg_number: s.reg_number,
+      student_name: s.full_name,
+      ca_score: 18 + ((idx * 3) % 11) // 18 to 28 out of 30
+    }))
     const ws = XLSX.utils.json_to_sheet(sample)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'CA_Scores')
-    XLSX.writeFile(wb, 'ca_scores_template_max30.xlsx')
+    XLSX.writeFile(wb, `${selectedCourse?.code || 'Course'}_CA_template_max30.xlsx`)
   }
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId)
@@ -211,11 +260,21 @@ export default function UploadCaScoresPage() {
   return (
     <DashboardLayout title="Upload & Auto-Merge CA Scores (Max 30)" roleRequired="lecturer">
       {statusMessage && (
-        <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 text-sm font-medium ${
+        <div className={`mb-6 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm font-medium ${
           statusMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
-          {statusMessage.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
-          <span>{statusMessage.text}</span>
+          <div className="flex items-center gap-3">
+            {statusMessage.type === 'success' ? <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
+            <span>{statusMessage.text}</span>
+          </div>
+          {statusMessage.type === 'success' && (
+            <a
+              href="/dashboard/lecturer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1E3A8A] hover:bg-blue-800 text-white rounded-lg text-xs font-bold shrink-0 transition"
+            >
+              Sign & Submit to HOD →
+            </a>
+          )}
         </div>
       )}
 
@@ -232,7 +291,7 @@ export default function UploadCaScoresPage() {
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600"
             >
               {courses.map(c => (
-                <option key={c.id} value={c.id}>{c.code} - {c.title}</option>
+                <option key={c.id} value={c.id}>{c.code} - {c.title} ({c.credit_units || 3} Units • {c.semester === 'second' ? '2nd' : '1st'} Sem)</option>
               ))}
             </select>
           </div>
@@ -254,8 +313,57 @@ export default function UploadCaScoresPage() {
         </div>
       </div>
 
-      {/* CA Upload Box */}
-      <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-xs mb-6 text-center">
+      {/* Clean Mode Switcher Tabs */}
+      <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab('upload')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === 'upload'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <Upload className="w-4 h-4" />
+          <span>Upload CA Scores</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('records')}
+          className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === 'records'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+          }`}
+        >
+          <FileCheck className="w-4 h-4" />
+          <span>View Saved Records ({existingFinalResults.length || existingCaScores.length})</span>
+        </button>
+      </div>
+
+      {activeTab === 'upload' && (
+        <>
+          {(existingFinalResults.length > 0 || existingCaScores.length > 0) && matchedResults.length === 0 && (
+            <div className="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>
+                  <strong>Database Note:</strong> {existingFinalResults.length > 0 ? `${existingFinalResults.length} final results` : `${existingCaScores.length} CA scores`} already recorded on file for {selectedCourse?.code}. Uploading new CA will update them.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('records')}
+                className="text-emerald-700 hover:underline font-bold shrink-0 ml-4"
+              >
+                View Current Records →
+              </button>
+            </div>
+          )}
+
+          {/* CA Upload Box */}
+          <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-xs mb-6 text-center">
         <div className="max-w-lg mx-auto">
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
             <Calculator className="w-7 h-7" />
@@ -387,21 +495,25 @@ export default function UploadCaScoresPage() {
                     <td className="py-3.5 px-5 font-mono font-bold text-primary">{r.reg_number}</td>
                     <td className="py-3.5 px-5 font-medium text-slate-900">{r.student_name}</td>
                     <td className="py-3.5 px-5 font-semibold text-emerald-700">{r.ca_score}</td>
-                    <td className="py-3.5 px-5 font-semibold text-blue-700">{r.exam_score}</td>
-                    <td className="py-3.5 px-5 font-extrabold text-slate-900">{r.total_score}</td>
+                    <td className="py-3.5 px-5 font-semibold text-blue-700">{r.hasExam ? r.exam_score : <span className="text-xs text-slate-400 italic">Pending</span>}</td>
+                    <td className="py-3.5 px-5 font-extrabold text-slate-900">{r.total_score != null ? r.total_score : <span className="text-xs text-slate-400 italic">Pending</span>}</td>
                     <td className="py-3.5 px-5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                        r.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
-                        r.grade === 'B' ? 'bg-blue-100 text-blue-800' :
-                        r.grade === 'C' ? 'bg-indigo-100 text-indigo-800' :
-                        r.grade === 'D' ? 'bg-amber-100 text-amber-800' :
-                        r.grade === 'E' ? 'bg-orange-100 text-orange-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {r.grade}
-                      </span>
+                      {r.hasExam ? (
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          r.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                          r.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                          r.grade === 'C' ? 'bg-indigo-100 text-indigo-800' :
+                          r.grade === 'D' ? 'bg-amber-100 text-amber-800' :
+                          r.grade === 'E' ? 'bg-orange-100 text-orange-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {r.grade}
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-500 font-semibold">—</span>
+                      )}
                     </td>
-                    <td className="py-3.5 px-5 font-bold text-slate-900">{r.grade_point.toFixed(1)}</td>
+                    <td className="py-3.5 px-5 font-bold text-slate-900">{r.hasExam && r.grade_point != null ? Number(r.grade_point).toFixed(1) : '—'}</td>
                     <td className="py-3.5 px-5 text-xs text-slate-500">{r.grade_description}</td>
                   </tr>
                 ))}
@@ -410,23 +522,39 @@ export default function UploadCaScoresPage() {
           </div>
         </div>
       )}
+        </>
+      )}
 
-      {/* Currently Saved Final Results for this Course */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+      {/* Official Database Records Tab */}
+      {activeTab === 'records' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-slate-900">Current Compiled Results for {selectedCourse?.code || 'Course'}</h3>
-            <p className="text-xs text-slate-500">{existingFinalResults.length} student results compiled</p>
+            <h3 className="text-base font-bold text-slate-900">
+              {existingFinalResults.length > 0
+                ? `Compiled Results for ${selectedCourse?.code || 'Course'}`
+                : `Recorded CA Scores for ${selectedCourse?.code || 'Course'}`}
+            </h3>
+            <p className="text-xs text-slate-500">
+              {existingFinalResults.length > 0
+                ? `${existingFinalResults.length} student results compiled & ready for HOD submission`
+                : `${existingCaScores.length} student CA score(s) on record`}
+            </p>
           </div>
-          {existingFinalResults.length > 0 && (
+          {existingFinalResults.length > 0 ? (
             <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
               existingFinalResults[0].status === 'approved' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
               existingFinalResults[0].status === 'distributed' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+              existingFinalResults[0].status === 'submitted' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
               'bg-amber-50 text-amber-700 border border-amber-200'
             }`}>
               Status: {existingFinalResults[0].status}
             </span>
-          )}
+          ) : existingCaScores.length > 0 ? (
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+              CA Stored • Exam Pending
+            </span>
+          ) : null}
         </div>
 
         <div className="overflow-x-auto">
@@ -444,13 +572,13 @@ export default function UploadCaScoresPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {existingFinalResults.length === 0 ? (
+              {existingFinalResults.length === 0 && existingCaScores.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="py-8 text-center text-slate-400">
-                    No merged final results compiled yet for this course. Upload CA scores above to compile.
+                    No scores uploaded yet for this course. Upload CA or Exam scores above to begin.
                   </td>
                 </tr>
-              ) : (
+              ) : existingFinalResults.length > 0 ? (
                 existingFinalResults.map((r) => {
                   const s = students.find(stud => stud.id === r.student_id)
                   return (
@@ -472,11 +600,32 @@ export default function UploadCaScoresPage() {
                     </tr>
                   )
                 })
+              ) : (
+                existingCaScores.map((c) => {
+                  const s = students.find(stud => stud.id === c.student_id)
+                  return (
+                    <tr key={c.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3.5 px-5 font-mono font-bold text-primary">{s ? s.reg_number : 'N/A'}</td>
+                      <td className="py-3.5 px-5 font-medium text-slate-900">{s ? s.full_name : 'Unknown'}</td>
+                      <td className="py-3.5 px-5 text-emerald-700 font-bold">{c.ca_score}</td>
+                      <td className="py-3.5 px-5 text-slate-400 italic">Pending</td>
+                      <td className="py-3.5 px-5 text-slate-400 italic">Pending</td>
+                      <td className="py-3.5 px-5 text-slate-400 font-semibold">—</td>
+                      <td className="py-3.5 px-5 text-slate-400 font-semibold">—</td>
+                      <td className="py-3.5 px-5">
+                        <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                          CA Saved
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
+      )}
     </DashboardLayout>
   )
 }

@@ -29,18 +29,19 @@ export default function HodDistributePage() {
         getResultDistributions()
       ])
 
-      const myCourses = crs.filter(c => c.department_id === user?.department_id || c.code.startsWith('COS'))
-      setCourses(myCourses)
+      const myCourses = crs.filter(c => c.department_id === user?.department_id || (!user?.department_id && c.code.startsWith('COS')))
+      const displayCourses = myCourses.length > 0 ? myCourses : crs
+      setCourses(displayCourses)
       setEnrollments(enrs)
       setStudents(studs)
       setDepartments(depts)
       setFinalResults(finals)
       setDistributions(dists)
 
-      if (myCourses.length > 0) {
+      if (displayCourses.length > 0) {
         const params = new URLSearchParams(window.location.search)
         const urlCourseId = params.get('courseId')
-        const initial = myCourses.find(c => c.id === urlCourseId) || myCourses[0]
+        const initial = displayCourses.find(c => c.id === urlCourseId) || displayCourses[0]
         setSelectedCourseId(initial.id)
       }
     }
@@ -89,7 +90,7 @@ export default function HodDistributePage() {
 
       setStatusMessage({
         type: 'success',
-        text: `Results for ${selectedCourse?.code} successfully distributed to ${takingDepartmentIds.length} recipient department(s)! Receiving HODs have been notified.`
+        text: `Results for ${selectedCourse?.code} successfully distributed to recipient departments AND automatically archived with the Central Examinations & Records Unit!`
       })
 
       // Reload distributions

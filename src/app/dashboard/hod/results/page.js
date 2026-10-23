@@ -30,12 +30,13 @@ export default function HodResultsReviewPage() {
         setDepartments(depts)
 
         // Departmental courses
-        const myCourses = allCourses.filter(c => c.department_id === user?.department_id || c.code.startsWith('COS'))
-        setCourses(myCourses)
+        const myCourses = allCourses.filter(c => c.department_id === user?.department_id || (!user?.department_id && c.code.startsWith('COS')))
+        const displayCourses = myCourses.length > 0 ? myCourses : allCourses
+        setCourses(displayCourses)
 
-        if (myCourses.length > 0) {
-          setSelectedCourseId(myCourses[0].id)
-          loadResults(myCourses[0].id)
+        if (displayCourses.length > 0) {
+          setSelectedCourseId(displayCourses[0].id)
+          loadResults(displayCourses[0].id)
         }
       } finally {
         setLoading(false)
@@ -73,8 +74,12 @@ export default function HodResultsReviewPage() {
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId)
   const isDraft = finalResults.some(r => r.status === 'draft')
+  const isSubmitted = finalResults.some(r => r.status === 'submitted')
   const isApproved = finalResults.length > 0 && finalResults.every(r => r.status === 'approved' || r.status === 'distributed')
   const isDistributed = finalResults.length > 0 && finalResults.every(r => r.status === 'distributed')
+
+  const submittedResults = finalResults.filter(r => r.status === 'submitted')
+  const otherResults = finalResults.filter(r => r.status !== 'submitted')
 
   // Calculate statistics
   const totalStudents = finalResults.length
@@ -112,7 +117,7 @@ export default function HodResultsReviewPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {isDraft && (
+            {(isDraft || isSubmitted) && (
               <button
                 onClick={handleApprove}
                 disabled={approving || finalResults.length === 0}
@@ -162,6 +167,46 @@ export default function HodResultsReviewPage() {
           <span className="text-[11px] text-slate-500">Mean composite score</span>
         </div>
       </div>
+
+      {/* Pending Lecturer Submissions — Amber Banner */}
+      {isSubmitted && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-5">
+          <div className="flex items-start gap-3">
+            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-sm font-bold text-amber-900 mb-1">
+                Pending Review — Submitted by Lecturer
+              </h4>
+              <p className="text-xs text-amber-700 mb-3">
+                The course lecturer has signed off and submitted <strong>{submittedResults.length}</strong> result record{submittedResults.length !== 1 ? 's' : ''} for <strong>{selectedCourse?.code}</strong>. Review the results below and click <em>Approve Department Results</em> to proceed.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {submittedResults.slice(0, 4).map((r) => {
+                  const s = students.find(stud => stud.id === r.student_id)
+                  return (
+                    <span key={r.id} className="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full border border-amber-200">
+                      {s ? s.reg_number : r.student_id} — {r.grade} ({r.total_score})
+                    </span>
+                  )
+                })}
+                {submittedResults.length > 4 && (
+                  <span className="px-2.5 py-1 bg-amber-100 text-amber-600 text-xs rounded-full border border-amber-200">
+                    +{submittedResults.length - 4} more
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handleApprove}
+              disabled={approving}
+              className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-sm transition disabled:opacity-50 shrink-0"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {approving ? 'Approving...' : 'Approve Results'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Merged Results Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -224,9 +269,11 @@ export default function HodResultsReviewPage() {
                       <td className="py-3.5 px-5 font-bold">{Number(r.grade_point).toFixed(1)}</td>
                       <td className="py-3.5 px-5 capitalize">
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                          r.status === 'approved' || r.status === 'distributed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                          r.status === 'approved' || r.status === 'distributed' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                          r.status === 'submitted' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          'bg-slate-100 text-slate-600'
                         }`}>
-                          {r.status}
+                          {r.status === 'submitted' ? 'Submitted by Lecturer' : r.status}
                         </span>
                       </td>
                     </tr>

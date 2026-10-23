@@ -51,9 +51,10 @@ export default function HodDashboardPage() {
   }, [user])
 
   const myDeptId = user?.department_id || departments[0]?.id
+  const myDept = departments.find(d => d.id === myDeptId)
 
   // Courses originating in this department
-  const deptCourses = courses.filter(c => c.department_id === myDeptId || c.code.startsWith('COS'))
+  const deptCourses = courses.filter(c => c.department_id === myDeptId || (c.code.startsWith('COS') && myDeptId === 'd1111111-1111-1111-1111-111111111111'))
 
   // Filter courses by status
   const pendingApprovalCourses = deptCourses.filter(c => {
@@ -67,11 +68,19 @@ export default function HodDashboardPage() {
   })
 
   // Outgoing distributions sent by this department
-  const sentDistributions = distributions.filter(d => d.sent_by_hod_id === user?.id || d.course_id === 'c1111111-1111-1111-1111-111111111111')
+  const sentDistributions = distributions.filter(d => d.sent_by_hod_id === user?.id || deptCourses.some(c => c.id === d.course_id))
 
   // Incoming distributions received by this department
   const incomingDistributions = distributions.filter(d => d.received_by_dept_id === myDeptId)
   const pendingAcknowledge = incomingDistributions.filter(d => d.status === 'sent')
+
+  // Distributions relevant to this HOD's department (sent or received)
+  const relevantDistributions = distributions.filter(d =>
+    !myDeptId ||
+    d.received_by_dept_id === myDeptId ||
+    d.sent_by_hod_id === user?.id ||
+    deptCourses.some(c => c.id === d.course_id)
+  )
 
   return (
     <DashboardLayout title="Head of Department (HOD) Portal" roleRequired="hod">
@@ -86,7 +95,7 @@ export default function HodDashboardPage() {
               {hodProfile?.full_name || user?.full_name || 'Departmental HOD'}
             </h1>
             <p className="mt-1 text-sm text-blue-100/90">
-              {hodProfile?.rank || 'Head of Department'} • Computer Science Department
+              {hodProfile?.rank || 'Head of Department'} &bull; {myDept?.name || 'Department'} ({myDept?.code || 'DEPT'})
             </p>
           </div>
 
@@ -234,14 +243,14 @@ export default function HodDashboardPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {distributions.length === 0 ? (
+              {relevantDistributions.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="py-8 text-center text-slate-400">
-                    No result distribution transmissions on record.
+                    No result distribution transmissions on record for your department.
                   </td>
                 </tr>
               ) : (
-                distributions.map((d) => {
+                relevantDistributions.map((d) => {
                   const course = courses.find(c => c.id === d.course_id)
                   const targetDept = departments.find(dept => dept.id === d.received_by_dept_id)
                   const isAck = d.status === 'acknowledged'

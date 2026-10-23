@@ -1,14 +1,16 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v4'
+const STORAGE_KEY = 'dist_results_system_data_v11'
 
 const initialSeedData = {
   departments: [
-    { id: 'd1111111-1111-1111-1111-111111111111', name: 'Computer Science', code: 'COS', faculty: 'Faculty of Science' },
-    { id: 'd2222222-2222-2222-2222-222222222222', name: 'Electrical & Electronics Engineering', code: 'EEE', faculty: 'Faculty of Engineering' },
-    { id: 'd3333333-3333-3333-3333-333333333333', name: 'Mechanical Engineering', code: 'MEE', faculty: 'Faculty of Engineering' },
-    { id: 'd4444444-4444-4444-4444-444444444444', name: 'Mathematics', code: 'MTH', faculty: 'Faculty of Science' }
+    { id: 'd1111111-1111-1111-1111-111111111111', name: 'Computer Science', code: 'COS', faculty: 'Faculty of Physical Sciences' },
+    { id: 'd2222222-2222-2222-2222-222222222222', name: 'Mathematics', code: 'MTH', faculty: 'Faculty of Physical Sciences' },
+    { id: 'd3333333-3333-3333-3333-333333333333', name: 'Vocational & Technology Education', code: 'VTE', faculty: 'Faculty of Vocational and Technical Education' },
+    { id: 'd4444444-4444-4444-4444-444444444444', name: 'Computer Robotics', code: 'CRB', faculty: 'Faculty of Education' },
+    { id: 'd5555555-5555-5555-5555-555555555555', name: 'Statistics', code: 'STA', faculty: 'Faculty of Physical Sciences' },
+    { id: 'd0000000-0000-0000-0000-000000000000', name: 'Examinations & Records Unit', code: 'EXAM-OFFICE', faculty: 'University Registry' }
   ],
   users: [
     {
@@ -29,17 +31,73 @@ const initialSeedData = {
     },
     {
       id: 'a3333333-aaaa-aaaa-aaaa-aaaaaaaaaaac',
-      email: 'hod.eee@institution.edu.ng',
+      email: 'hod.mth@institution.edu.ng',
       password_hash: 'password123',
       full_name: 'Dr. Chinwe Okeke',
       role: 'hod',
       department_id: 'd2222222-2222-2222-2222-222222222222'
     },
     {
+      id: 'a7777777-aaaa-aaaa-aaaa-aaaaaaaaaa01',
+      email: 'hod.vte@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Prof. Augustine O. Eze',
+      role: 'hod',
+      department_id: 'd3333333-3333-3333-3333-333333333333'
+    },
+    {
+      id: 'a8888888-aaaa-aaaa-aaaa-aaaaaaaaaa02',
+      email: 'hod.crb@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Dr. Grace N. Danjuma',
+      role: 'hod',
+      department_id: 'd4444444-4444-4444-4444-444444444444'
+    },
+    {
+      id: 'a9999999-aaaa-aaaa-aaaa-aaaaaaaaaa03',
+      email: 'hod.mee@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Engr. Dr. Mustapha Bello',
+      role: 'hod',
+      department_id: 'd5555555-5555-5555-5555-555555555555'
+    },
+    {
       id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaaad',
       email: 'lecturer.csc@institution.edu.ng',
       password_hash: 'password123',
       full_name: 'Dr. Aminu Ibrahim',
+      role: 'lecturer',
+      department_id: 'd1111111-1111-1111-1111-111111111111'
+    },
+    {
+      id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa21',
+      email: 'lecturer.eze@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Dr. Ngozi Eze',
+      role: 'lecturer',
+      department_id: 'd1111111-1111-1111-1111-111111111111'
+    },
+    {
+      id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa22',
+      email: 'lecturer.fashola@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Dr. Babatunde Fashola',
+      role: 'lecturer',
+      department_id: 'd1111111-1111-1111-1111-111111111111'
+    },
+    {
+      id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa31',
+      email: 'lecturer.ugwu@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Dr. Ifeanyi Ugwu',
+      role: 'lecturer',
+      department_id: 'd1111111-1111-1111-1111-111111111111'
+    },
+    {
+      id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa41',
+      email: 'lecturer.akpan@institution.edu.ng',
+      password_hash: 'password123',
+      full_name: 'Prof. Chukwuma Akpan',
       role: 'lecturer',
       department_id: 'd1111111-1111-1111-1111-111111111111'
     },
@@ -61,214 +119,85 @@ const initialSeedData = {
     }
   ],
   students: [
-    // ── Level 100 (admitted 2025) ──────────────────────────────────────────
-    {
-      id: 'b0101010-b101-b101-b101-b10101010101',
-      reg_number: '2025/100001',
-      full_name: 'Adaeze Nwosu',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 100,
-      session: '2025/26'
-    },
-    {
-      id: 'b0101010-b101-b101-b101-b10101010102',
-      reg_number: '2025/100002',
-      full_name: 'Seun Akinwale',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 100,
-      session: '2025/26'
-    },
-    {
-      id: 'b0101010-b101-b101-b101-b10101010103',
-      reg_number: '2025/100003',
-      full_name: 'Hauwa Musa',
-      department_id: 'd2222222-2222-2222-2222-222222222222',
-      level: 100,
-      session: '2025/26'
-    },
-    {
-      id: 'b0101010-b101-b101-b101-b10101010104',
-      reg_number: '2025/100004',
-      full_name: 'Tochukwu Igwe',
-      department_id: 'd3333333-3333-3333-3333-333333333333',
-      level: 100,
-      session: '2025/26'
-    },
-    {
-      id: 'b0101010-b101-b101-b101-b10101010105',
-      reg_number: '2025/100005',
-      full_name: 'Zainab Umar',
-      department_id: 'd4444444-4444-4444-4444-444444444444',
-      level: 100,
-      session: '2025/26'
-    },
+    // ── Level 100 (Admitted 2025) ──────────────────────────────────────────
+    { id: 'b1000001-0000-0000-0000-000000000001', reg_number: '2025/100001', full_name: 'Adaeze Nwosu', department_id: 'd1111111-1111-1111-1111-111111111111', level: 100, session: '2025/26' },
+    { id: 'b1000002-0000-0000-0000-000000000002', reg_number: '2025/100002', full_name: 'Seun Akinwale', department_id: 'd2222222-2222-2222-2222-222222222222', level: 100, session: '2025/26' },
+    { id: 'b1000003-0000-0000-0000-000000000003', reg_number: '2025/100003', full_name: 'Hauwa Musa', department_id: 'd3333333-3333-3333-3333-333333333333', level: 100, session: '2025/26' },
+    { id: 'b1000004-0000-0000-0000-000000000004', reg_number: '2025/100004', full_name: 'Tochukwu Igwe', department_id: 'd4444444-4444-4444-4444-444444444444', level: 100, session: '2025/26' },
+    { id: 'b1000005-0000-0000-0000-000000000005', reg_number: '2025/100005', full_name: 'Zainab Umar', department_id: 'd5555555-5555-5555-5555-555555555555', level: 100, session: '2025/26' },
+    { id: 'b1000006-0000-0000-0000-000000000006', reg_number: '2025/100006', full_name: 'Somtochukwu Eze', department_id: 'd1111111-1111-1111-1111-111111111111', level: 100, session: '2025/26' },
+    { id: 'b1000007-0000-0000-0000-000000000007', reg_number: '2025/100007', full_name: 'Maryam Usman', department_id: 'd2222222-2222-2222-2222-222222222222', level: 100, session: '2025/26' },
+    { id: 'b1000008-0000-0000-0000-000000000008', reg_number: '2025/100008', full_name: 'Victor Oladipo', department_id: 'd3333333-3333-3333-3333-333333333333', level: 100, session: '2025/26' },
+    { id: 'b1000009-0000-0000-0000-000000000009', reg_number: '2025/100009', full_name: 'Praise Nwachukwu', department_id: 'd4444444-4444-4444-4444-444444444444', level: 100, session: '2025/26' },
+    { id: 'b1000010-0000-0000-0000-000000000010', reg_number: '2025/100010', full_name: 'Kenneth Onyema', department_id: 'd5555555-5555-5555-5555-555555555555', level: 100, session: '2025/26' },
 
-    // ── Level 200 (admitted 2024) ──────────────────────────────────────────
-    {
-      id: 'b0202020-b202-b202-b202-b20202020201',
-      reg_number: '2024/200001',
-      full_name: 'Ikenna Okafor',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 200,
-      session: '2025/26'
-    },
-    {
-      id: 'b0202020-b202-b202-b202-b20202020202',
-      reg_number: '2024/200002',
-      full_name: 'Blessing Afolabi',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 200,
-      session: '2025/26'
-    },
-    {
-      id: 'b0202020-b202-b202-b202-b20202020203',
-      reg_number: '2024/200003',
-      full_name: 'Mubarak Garba',
-      department_id: 'd2222222-2222-2222-2222-222222222222',
-      level: 200,
-      session: '2025/26'
-    },
-    {
-      id: 'b0202020-b202-b202-b202-b20202020204',
-      reg_number: '2024/200004',
-      full_name: 'Chisom Anieke',
-      department_id: 'd3333333-3333-3333-3333-333333333333',
-      level: 200,
-      session: '2025/26'
-    },
-    {
-      id: 'b0202020-b202-b202-b202-b20202020205',
-      reg_number: '2024/200005',
-      full_name: 'Yusuf Abdullahi',
-      department_id: 'd4444444-4444-4444-4444-444444444444',
-      level: 200,
-      session: '2025/26'
-    },
+    // ── Level 200 (Admitted 2024) ──────────────────────────────────────────
+    { id: 'b2000001-0000-0000-0000-000000000001', reg_number: '2024/200001', full_name: 'Ikenna Okafor', department_id: 'd1111111-1111-1111-1111-111111111111', level: 200, session: '2025/26' },
+    { id: 'b2000002-0000-0000-0000-000000000002', reg_number: '2024/200002', full_name: 'Cynthia Kalu', department_id: 'd1111111-1111-1111-1111-111111111111', level: 200, session: '2025/26' },
+    { id: 'b2000003-0000-0000-0000-000000000003', reg_number: '2024/200003', full_name: 'Mubarak Garba', department_id: 'd3333333-3333-3333-3333-333333333333', level: 200, session: '2025/26' },
+    { id: 'b2000004-0000-0000-0000-000000000004', reg_number: '2024/200004', full_name: 'Chisom Anieke', department_id: 'd4444444-4444-4444-4444-444444444444', level: 200, session: '2025/26' },
+    { id: 'b2000005-0000-0000-0000-000000000005', reg_number: '2024/200005', full_name: 'David Alabi', department_id: 'd4444444-4444-4444-4444-444444444444', level: 200, session: '2025/26' },
 
-    // ── Level 300 (admitted 2023) ──────────────────────────────────────────
-    {
-      id: 'b0303030-b303-b303-b303-b30303030301',
-      reg_number: '2023/300001',
-      full_name: 'Ngozi Onyekachi',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 300,
-      session: '2025/26'
-    },
-    {
-      id: 'b0303030-b303-b303-b303-b30303030302',
-      reg_number: '2023/300002',
-      full_name: 'Abdulrahman Suleiman',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 300,
-      session: '2025/26'
-    },
-    {
-      id: 'b0303030-b303-b303-b303-b30303030303',
-      reg_number: '2023/300003',
-      full_name: 'Kemi Adeyemi',
-      department_id: 'd2222222-2222-2222-2222-222222222222',
-      level: 300,
-      session: '2025/26'
-    },
-    {
-      id: 'b0303030-b303-b303-b303-b30303030304',
-      reg_number: '2023/300004',
-      full_name: 'Obinna Nnamdi',
-      department_id: 'd3333333-3333-3333-3333-333333333333',
-      level: 300,
-      session: '2025/26'
-    },
-    {
-      id: 'b0303030-b303-b303-b303-b30303030305',
-      reg_number: '2023/300005',
-      full_name: 'Amina Lawal',
-      department_id: 'd4444444-4444-4444-4444-444444444444',
-      level: 300,
-      session: '2025/26'
-    },
+    // ── Level 300 (Admitted 2023) ──────────────────────────────────────────
+    { id: 'b3000001-0000-0000-0000-000000000001', reg_number: '2023/300001', full_name: 'Ngozi Onyekachi', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
+    { id: 'b3000002-0000-0000-0000-000000000002', reg_number: '2023/300002', full_name: 'Tunde Bakare', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
+    { id: 'b3000003-0000-0000-0000-000000000003', reg_number: '2023/300003', full_name: 'Chinaza Ebere', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
 
-    // ── Level 400 (admitted 2022) ──────────────────────────────────────────
-    {
-      id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      reg_number: '2022/234567',
-      full_name: 'Chukwuebuka Obi',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 400,
-      session: '2025/26'
-    },
-    {
-      id: 'b2222222-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
-      reg_number: '2022/234568',
-      full_name: 'Fatima Bello',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      level: 400,
-      session: '2025/26'
-    },
-    {
-      id: 'b3333333-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
-      reg_number: '2022/235001',
-      full_name: 'Damilola Adeleke',
-      department_id: 'd2222222-2222-2222-2222-222222222222',
-      level: 400,
-      session: '2025/26'
-    },
-    {
-      id: 'b4444444-bbbb-bbbb-bbbb-bbbbbbbbbbb4',
-      reg_number: '2022/236001',
-      full_name: 'Emeka Eze',
-      department_id: 'd3333333-3333-3333-3333-333333333333',
-      level: 400,
-      session: '2025/26'
-    },
-    {
-      id: 'b4444444-bbbb-bbbb-bbbb-bbbbbbbbbbb5',
-      reg_number: '2022/236002',
-      full_name: 'Rukayat Salami',
-      department_id: 'd4444444-4444-4444-4444-444444444444',
-      level: 400,
-      session: '2025/26'
-    }
+    // ── Level 400 (Admitted 2022) ──────────────────────────────────────────
+    { id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', reg_number: '2022/234567', full_name: 'Chukwuebuka Obi', department_id: 'd1111111-1111-1111-1111-111111111111', level: 400, session: '2025/26' },
+    { id: 'b4000002-0000-0000-0000-000000000002', reg_number: '2022/234568', full_name: 'Emeka Okafor', department_id: 'd1111111-1111-1111-1111-111111111111', level: 400, session: '2025/26' },
+    { id: 'b4000003-0000-0000-0000-000000000003', reg_number: '2022/234569', full_name: 'Blessing Danjuma', department_id: 'd1111111-1111-1111-1111-111111111111', level: 400, session: '2025/26' }
   ],
   courses: [
     {
-      id: 'c1111111-1111-1111-1111-111111111111',
-      code: 'COS401',
-      title: 'Distributed Systems',
-      credit_units: 3,
-      semester: 'first',
-      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaaad',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      session: '2025/26'
-    },
-    {
-      id: 'c2222222-2222-2222-2222-222222222222',
-      code: 'COS403',
-      title: 'Compiler Construction',
-      credit_units: 3,
-      semester: 'first',
-      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaaad',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      session: '2025/26'
-    },
-    {
-      id: 'c3333333-3333-3333-3333-333333333333',
-      code: 'COS405',
-      title: 'Software Engineering Practice',
+      id: 'c1010000-0000-0000-0000-000000000101',
+      code: 'COS 101',
+      title: 'Introduction to Computer Science',
       credit_units: 2,
       semester: 'first',
-      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaaad',
+      session: '2025/26',
       department_id: 'd1111111-1111-1111-1111-111111111111',
-      session: '2025/26'
+      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaaad' // Dr. Aminu Ibrahim
     },
     {
-      id: 'c4444444-4444-4444-4444-444444444444',
-      code: 'EEE401',
-      title: 'Microprocessor Systems',
+      id: 'c2010000-0000-0000-0000-000000000201',
+      code: 'COS 201',
+      title: 'Computer Programming I',
+      credit_units: 2,
+      semester: 'first',
+      session: '2025/26',
+      department_id: 'd1111111-1111-1111-1111-111111111111',
+      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa21' // Dr. Ngozi Eze
+    },
+    {
+      id: 'c2020000-0000-0000-0000-000000000202',
+      code: 'COS 202',
+      title: 'Computer Programming II',
+      credit_units: 2,
+      semester: 'second',
+      session: '2025/26',
+      department_id: 'd1111111-1111-1111-1111-111111111111',
+      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa22' // Dr. Babatunde Fashola
+    },
+    {
+      id: 'c3430000-0000-0000-0000-000000000343',
+      code: 'COS 343',
+      title: 'Database Design & Management',
       credit_units: 3,
       semester: 'first',
-      lecturer_id: null,
-      department_id: 'd2222222-2222-2222-2222-222222222222',
-      session: '2025/26'
+      session: '2025/26',
+      department_id: 'd1111111-1111-1111-1111-111111111111',
+      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa31' // Dr. Ifeanyi Ugwu
+    },
+    {
+      id: 'c4140000-0000-0000-0000-000000000414',
+      code: 'COS 414',
+      title: 'Distributed Computing Systems',
+      credit_units: 3,
+      semester: 'second',
+      session: '2025/26',
+      department_id: 'd1111111-1111-1111-1111-111111111111',
+      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa41' // Prof. Chukwuma Akpan
     }
   ],
   enrollments: [
@@ -344,6 +273,33 @@ const initialSeedData = {
       rank: 'Associate Professor',
       phone: '+234 802 987 6543',
       signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">C.Okeke</text></svg>'
+    },
+    {
+      id: 'f3333333-3333-3333-3333-333333333333',
+      user_id: 'a7777777-aaaa-aaaa-aaaa-aaaaaaaaaa01',
+      full_name: 'Prof. Augustine O. Eze',
+      department_id: 'd3333333-3333-3333-3333-333333333333',
+      rank: 'Professor of Vocational & Technical Education',
+      phone: '+234 802 345 6789',
+      signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">A.O.Eze</text></svg>'
+    },
+    {
+      id: 'f4444444-4444-4444-4444-444444444444',
+      user_id: 'a8888888-aaaa-aaaa-aaaa-aaaaaaaaaa02',
+      full_name: 'Dr. Grace N. Danjuma',
+      department_id: 'd4444444-4444-4444-4444-444444444444',
+      rank: 'Associate Professor (Robotics & AI)',
+      phone: '+234 805 678 1234',
+      signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">G.Danjuma</text></svg>'
+    },
+    {
+      id: 'f5555555-5555-5555-5555-555555555555',
+      user_id: 'a9999999-aaaa-aaaa-aaaa-aaaaaaaaaa03',
+      full_name: 'Engr. Dr. Mustapha Bello',
+      department_id: 'd5555555-5555-5555-5555-555555555555',
+      rank: 'Senior Lecturer & Reg. Engineer (COREN)',
+      phone: '+234 803 987 6543',
+      signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">M.Bello</text></svg>'
     }
   ],
   result_distributions: [
@@ -447,7 +403,7 @@ export async function getDepartments() {
 
 export async function addDepartment(dept) {
   const newDept = {
-    id: `d-${Date.now()}`,
+    id: generateUUID(),
     name: dept.name,
     code: dept.code.toUpperCase(),
     faculty: dept.faculty,
@@ -497,7 +453,7 @@ export async function getUsers() {
 
 export async function addUser(userData) {
   const newUser = {
-    id: `u-${Date.now()}`,
+    id: generateUUID(),
     email: userData.email.toLowerCase().trim(),
     password_hash: userData.password || 'password123',
     full_name: userData.full_name,
@@ -580,10 +536,18 @@ export async function getStudents() {
   return getLocalData().students || []
 }
 
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
 export async function addStudent(studentData) {
   const reg = normalizeRegNumber(studentData.reg_number)
   const newStudent = {
-    id: `s-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    id: generateUUID(),
     reg_number: reg,
     full_name: studentData.full_name,
     department_id: studentData.department_id,
@@ -594,7 +558,8 @@ export async function addStudent(studentData) {
 
   if (isSupabaseReady()) {
     try {
-      await supabase.from('students').insert([newStudent])
+      const { error } = await supabase.from('students').insert([newStudent])
+      if (error) console.warn('Supabase student insert error:', error.message)
     } catch (e) {
       console.warn('Supabase student insert failed', e)
     }
@@ -636,7 +601,7 @@ export async function getCourses() {
 
 export async function addCourse(courseData) {
   const newCourse = {
-    id: `c-${Date.now()}`,
+    id: generateUUID(),
     code: courseData.code.toUpperCase().trim(),
     title: courseData.title.trim(),
     credit_units: Number(courseData.credit_units) || 3,
@@ -676,7 +641,7 @@ export async function getEnrollments() {
 
 export async function enrollStudent(enrollmentData) {
   const newEnrollment = {
-    id: `e-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    id: generateUUID(),
     student_id: enrollmentData.student_id,
     course_id: enrollmentData.course_id,
     session: enrollmentData.session || '2025/26',
@@ -697,13 +662,14 @@ export async function enrollStudent(enrollmentData) {
 }
 
 // ----------------- EXAM SCORES (0-70) -----------------
+// ----------------- EXAM SCORES (0-70) -----------------
 export async function getExamScores(courseId) {
   if (isSupabaseReady()) {
     try {
       let query = supabase.from('exam_scores').select('*')
       if (courseId) query = query.eq('course_id', courseId)
       const { data, error } = await query
-      if (!error && data) return data
+      if (!error && data && data.length > 0) return data
     } catch (e) {
       console.warn('Supabase exam scores read error', e)
     }
@@ -714,12 +680,14 @@ export async function getExamScores(courseId) {
 
 export async function saveExamScores(scores) {
   const local = getLocalData()
+  const toUpsert = []
+
   for (const s of scores) {
     const existingIdx = local.exam_scores.findIndex(
       e => e.student_id === s.student_id && e.course_id === s.course_id && e.session === (s.session || '2025/26')
     )
     const entry = {
-      id: existingIdx >= 0 ? local.exam_scores[existingIdx].id : `es-${Date.now()}-${Math.random()}`,
+      id: existingIdx >= 0 ? local.exam_scores[existingIdx].id : generateUUID(),
       student_id: s.student_id,
       course_id: s.course_id,
       exam_score: Number(s.exam_score) || 0,
@@ -731,8 +699,18 @@ export async function saveExamScores(scores) {
     } else {
       local.exam_scores.push(entry)
     }
+    toUpsert.push(entry)
   }
   saveLocalData(local)
+
+  if (isSupabaseReady() && toUpsert.length > 0) {
+    try {
+      const { error } = await supabase.from('exam_scores').upsert(toUpsert, { onConflict: 'student_id,course_id,session' })
+      if (error) console.warn('Supabase saveExamScores error:', error.message)
+    } catch (e) {
+      console.warn('Supabase saveExamScores failed', e)
+    }
+  }
   return true
 }
 
@@ -743,7 +721,7 @@ export async function getCaScores(courseId) {
       let query = supabase.from('ca_scores').select('*')
       if (courseId) query = query.eq('course_id', courseId)
       const { data, error } = await query
-      if (!error && data) return data
+      if (!error && data && data.length > 0) return data
     } catch (e) {
       console.warn('Supabase ca scores read error', e)
     }
@@ -754,12 +732,14 @@ export async function getCaScores(courseId) {
 
 export async function saveCaScores(scores) {
   const local = getLocalData()
+  const toUpsert = []
+
   for (const s of scores) {
     const existingIdx = local.ca_scores.findIndex(
       c => c.student_id === s.student_id && c.course_id === s.course_id && c.session === (s.session || '2025/26')
     )
     const entry = {
-      id: existingIdx >= 0 ? local.ca_scores[existingIdx].id : `ca-${Date.now()}-${Math.random()}`,
+      id: existingIdx >= 0 ? local.ca_scores[existingIdx].id : generateUUID(),
       student_id: s.student_id,
       course_id: s.course_id,
       ca_score: Number(s.ca_score) || 0,
@@ -771,8 +751,18 @@ export async function saveCaScores(scores) {
     } else {
       local.ca_scores.push(entry)
     }
+    toUpsert.push(entry)
   }
   saveLocalData(local)
+
+  if (isSupabaseReady() && toUpsert.length > 0) {
+    try {
+      const { error } = await supabase.from('ca_scores').upsert(toUpsert, { onConflict: 'student_id,course_id,session' })
+      if (error) console.warn('Supabase saveCaScores error:', error.message)
+    } catch (e) {
+      console.warn('Supabase saveCaScores failed', e)
+    }
+  }
   return true
 }
 
@@ -785,7 +775,7 @@ export async function getFinalResults(courseId, studentId, status) {
       if (studentId) query = query.eq('student_id', studentId)
       if (status) query = query.eq('status', status)
       const { data, error } = await query
-      if (!error && data) return data
+      if (!error && data && data.length > 0) return data
     } catch (e) {
       console.warn('Supabase final results read error', e)
     }
@@ -799,6 +789,8 @@ export async function getFinalResults(courseId, studentId, status) {
 
 export async function saveFinalResults(results) {
   const local = getLocalData()
+  const toUpsert = []
+
   for (const r of results) {
     const total = Number(r.ca_score || 0) + Number(r.exam_score || 0)
     const { grade, gradePoint } = calculateGrade(total)
@@ -808,7 +800,7 @@ export async function saveFinalResults(results) {
     )
 
     const entry = {
-      id: existingIdx >= 0 ? local.final_results[existingIdx].id : `fr-${Date.now()}-${Math.random()}`,
+      id: existingIdx >= 0 ? local.final_results[existingIdx].id : generateUUID(),
       student_id: r.student_id,
       course_id: r.course_id,
       ca_score: Number(r.ca_score || 0),
@@ -826,12 +818,70 @@ export async function saveFinalResults(results) {
     } else {
       local.final_results.push(entry)
     }
+    toUpsert.push(entry)
   }
   saveLocalData(local)
+
+  if (isSupabaseReady() && toUpsert.length > 0) {
+    try {
+      const { error } = await supabase.from('final_results').upsert(toUpsert, { onConflict: 'student_id,course_id,session' })
+      if (error) console.warn('Supabase saveFinalResults error:', error.message)
+    } catch (e) {
+      console.warn('Supabase saveFinalResults failed', e)
+    }
+  }
   return true
 }
 
+export async function submitResultsToHOD(courseId, lecturerId) {
+  // Changes all draft final_results for this course to 'submitted'
+  // This signals to HOD that lecturer has signed off
+  if (isSupabaseReady()) {
+    try {
+      const { error } = await supabase
+        .from('final_results')
+        .update({ status: 'submitted' })
+        .eq('course_id', courseId)
+        .eq('status', 'draft')
+      if (error) console.warn('Supabase submit error:', error.message)
+    } catch(e) { console.warn(e) }
+  }
+  const local = getLocalData()
+  local.final_results = local.final_results.map(r =>
+    r.course_id === courseId && r.status === 'draft'
+      ? { ...r, status: 'submitted', submitted_at: new Date().toISOString(), submitted_by: lecturerId }
+      : r
+  )
+  saveLocalData(local)
+}
+
+export async function acknowledgeExamOfficeReceipt(distributionId, officerId) {
+  if (isSupabaseReady()) {
+    try {
+      await supabase.from('result_distributions')
+        .update({ status: 'acknowledged', acknowledged_at: new Date().toISOString(), acknowledged_by_id: officerId })
+        .eq('id', distributionId)
+    } catch(e) { console.warn(e) }
+  }
+  const local = getLocalData()
+  local.result_distributions = (local.result_distributions || []).map(d =>
+    d.id === distributionId ? { ...d, status: 'acknowledged', acknowledged_at: new Date().toISOString(), acknowledged_by_id: officerId } : d
+  )
+  saveLocalData(local)
+}
+
 export async function updateCourseResultsStatus(courseId, newStatus) {
+  if (isSupabaseReady()) {
+    try {
+      const { error } = await supabase
+        .from('final_results')
+        .update({ status: newStatus })
+        .eq('course_id', courseId)
+      if (error) console.warn('Supabase updateCourseResultsStatus error:', error.message)
+    } catch (e) {
+      console.warn('Supabase updateCourseResultsStatus failed', e)
+    }
+  }
   const local = getLocalData()
   local.final_results = local.final_results.map(r => {
     if (r.course_id === courseId) {
@@ -864,7 +914,7 @@ export async function saveHodProfile(profileData) {
   )
 
   const entry = {
-    id: existingIdx >= 0 ? local.hod_profiles[existingIdx].id : `h-${Date.now()}`,
+    id: existingIdx >= 0 ? local.hod_profiles[existingIdx].id : generateUUID(),
     user_id: profileData.user_id,
     full_name: profileData.full_name,
     department_id: profileData.department_id,
@@ -885,6 +935,14 @@ export async function saveHodProfile(profileData) {
 
 // ----------------- RESULT DISTRIBUTIONS -----------------
 export async function getResultDistributions() {
+  if (isSupabaseReady()) {
+    try {
+      const { data, error } = await supabase.from('result_distributions').select('*').order('sent_at', { ascending: false })
+      if (!error && data && data.length > 0) return data
+    } catch (e) {
+      console.warn('Supabase getResultDistributions read error', e)
+    }
+  }
   const local = getLocalData()
   return local.result_distributions || []
 }
@@ -892,14 +950,19 @@ export async function getResultDistributions() {
 export async function createResultDistribution(courseId, session, semester, sentByHodId, receivingDeptIds) {
   const local = getLocalData()
   const created = []
+  const toInsertSupabase = []
 
-  for (const deptId of receivingDeptIds) {
+  // Ensure an archival copy is automatically dispatched to the Central Examinations & Records Unit
+  const EXAMS_OFFICE_DEPT_ID = 'd0000000-0000-0000-0000-000000000000'
+  const allDeptIds = [...new Set([...receivingDeptIds, EXAMS_OFFICE_DEPT_ID])]
+
+  for (const deptId of allDeptIds) {
     const existing = local.result_distributions.find(
       d => d.course_id === courseId && d.received_by_dept_id === deptId && d.session === session
     )
     if (!existing) {
       const entry = {
-        id: `rd-${Date.now()}-${Math.random()}`,
+        id: generateUUID(),
         course_id: courseId,
         session: session || '2025/26',
         semester: semester || 'first',
@@ -912,6 +975,7 @@ export async function createResultDistribution(courseId, session, semester, sent
       }
       local.result_distributions.push(entry)
       created.push(entry)
+      toInsertSupabase.push(entry)
     }
   }
 
@@ -922,10 +986,34 @@ export async function createResultDistribution(courseId, session, semester, sent
   })
 
   saveLocalData(local)
+
+  if (isSupabaseReady()) {
+    try {
+      if (toInsertSupabase.length > 0) {
+        await supabase.from('result_distributions').insert(toInsertSupabase)
+      }
+      await supabase.from('final_results').update({ status: 'distributed' }).eq('course_id', courseId)
+    } catch (e) {
+      console.warn('Supabase createResultDistribution sync error', e)
+    }
+  }
+
   return created
 }
 
 export async function acknowledgeDistribution(distributionId, acknowledgedById) {
+  if (isSupabaseReady()) {
+    try {
+      await supabase.from('result_distributions').update({
+        status: 'acknowledged',
+        acknowledged_at: new Date().toISOString(),
+        acknowledged_by_id: acknowledgedById
+      }).eq('id', distributionId)
+    } catch (e) {
+      console.warn('Supabase acknowledgeDistribution sync error', e)
+    }
+  }
+
   const local = getLocalData()
   const idx = local.result_distributions.findIndex(d => d.id === distributionId)
   if (idx >= 0) {
@@ -963,7 +1051,7 @@ export async function recomputeStudentCGPA(studentId) {
 
   const existingIdx = local.cgpa_records.findIndex(c => c.student_id === studentId)
   const entry = {
-    id: existingIdx >= 0 ? local.cgpa_records[existingIdx].id : `cg-${Date.now()}`,
+    id: existingIdx >= 0 ? local.cgpa_records[existingIdx].id : generateUUID(),
     student_id: studentId,
     total_credit_units: totalCreditUnits,
     total_quality_points: totalQualityPoints,
@@ -979,6 +1067,22 @@ export async function recomputeStudentCGPA(studentId) {
   }
 
   saveLocalData(local)
+
+  if (isSupabaseReady()) {
+    try {
+      await supabase.from('cgpa_records').upsert({
+        student_id: studentId,
+        total_credit_units: totalCreditUnits,
+        total_quality_points: totalQualityPoints,
+        cgpa,
+        classification,
+        last_updated: new Date().toISOString()
+      }, { onConflict: 'student_id' })
+    } catch (e) {
+      console.warn('Supabase cgpa_records upsert error:', e)
+    }
+  }
+
   return entry
 }
 
@@ -994,7 +1098,7 @@ export async function getComplaints(studentId) {
 export async function createComplaint(studentId, courseId, complaintText) {
   const local = getLocalData()
   const entry = {
-    id: `cmp-${Date.now()}`,
+    id: generateUUID(),
     student_id: studentId,
     course_id: courseId,
     complaint_text: complaintText.trim(),
