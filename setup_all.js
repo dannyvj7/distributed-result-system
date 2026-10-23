@@ -37,17 +37,6 @@ async function run() {
   }, { onConflict: 'id' });
   console.log('Profile STA error:', pErr);
 
-  console.log('3. Inserting Director of General Studies (SGS)...');
-  const { error: sgsErr } = await supabase.from('users').upsert({
-    id: 'a0000000-aaaa-aaaa-aaaa-aaaaaaaaaa00',
-    email: 'director.sgs@institution.edu.ng',
-    password_hash: 'password123',
-    full_name: 'Prof. (Mrs.) Ijeoma Okoye',
-    role: 'hod',
-    department_id: 'd1111111-1111-1111-1111-111111111111'
-  }, { onConflict: 'id' });
-  console.log('User SGS error:', sgsErr);
-
   console.log('4. Adding General Course GSP101 (Use of English)...');
   const { error: cErr } = await supabase.from('courses').upsert({
     id: 'c5555555-5555-5555-5555-555555555555',

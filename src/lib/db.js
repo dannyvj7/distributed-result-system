@@ -25,7 +25,7 @@ const initialSeedData = {
       id: 'a2222222-aaaa-aaaa-aaaa-aaaaaaaaaaab',
       email: 'hod.csc@institution.edu.ng',
       password_hash: 'password123',
-      full_name: 'Prof. Babatunde Adeleke',
+      full_name: 'Dr. Ugwuishi',
       role: 'hod',
       department_id: 'd1111111-1111-1111-1111-111111111111'
     },
@@ -259,11 +259,11 @@ const initialSeedData = {
     {
       id: 'f1111111-1111-1111-1111-111111111111',
       user_id: 'a2222222-aaaa-aaaa-aaaa-aaaaaaaaaaab',
-      full_name: 'Prof. Babatunde Adeleke',
+      full_name: 'Dr. Ugwuishi',
       department_id: 'd1111111-1111-1111-1111-111111111111',
-      rank: 'Professor of Computer Science',
+      rank: 'Head of Department',
       phone: '+234 803 123 4567',
-      signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">B.Adeleke</text></svg>'
+      signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">Dr.Ugwuishi</text></svg>'
     },
     {
       id: 'f2222222-2222-2222-2222-222222222222',
