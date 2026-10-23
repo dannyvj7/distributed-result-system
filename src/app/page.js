@@ -263,10 +263,10 @@ export default function StaffLoginPage() {
                   <div className="space-y-1 text-xs">
                     <button
                       type="button"
-                      onClick={() => handleAutofill('hod.csc@institution.edu.ng', 'Dr. Ugwuishi (Computer Science HOD)')}
+                      onClick={() => handleAutofill('hod.csc@institution.edu.ng', 'Dr. (Mrs.) Ifeoma Nwokoye (Computer Science HOD)')}
                       className="w-full p-2 bg-white border border-blue-200 hover:bg-blue-50/50 rounded-lg text-left transition flex items-center justify-between"
                     >
-                      <span className="font-semibold text-slate-900">1. Computer Science HOD (Dr. Ugwuishi)</span>
+                      <span className="font-semibold text-slate-900">1. Computer Science HOD (Dr. Ifeoma Nwokoye)</span>
                       <span className="text-[9px] bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded font-bold">Sender</span>
                     </button>
 
