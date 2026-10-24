@@ -69,9 +69,10 @@ export default function HodDashboardPage() {
   const handleApproveRectification = async () => {
     if (!activeRectification) return
     setApproving(true)
+    const notes = hodNotes.trim() || 'Executive approval granted to withdraw broadsheet line item and sanction the requested Continuous Assessment adjustment based on lecturer script audit.'
     try {
       const hodSigName = hodProfile?.full_name || user?.full_name || 'Dr. (Mrs.) Ifeoma Nwokoye'
-      await hodApproveWithdrawal(activeRectification.id, hodNotes, hodSigName)
+      await hodApproveWithdrawal(activeRectification.id, notes, hodSigName)
       setStatusMessage({
         type: 'success',
         text: `Broadsheet withdrawal and score adjustment formally sanctioned under Memo ${activeRectification.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Dispatched to Examinations Office for Senate record update.`

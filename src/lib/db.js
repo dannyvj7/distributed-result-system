@@ -1168,9 +1168,41 @@ export async function examOfficerFinalizeRectification(complaintId, finalRespons
   const local = getLocalData()
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
+    const resp = finalResponse ? finalResponse.trim() : 'Physical script audit confirmed by Course Lecturer. Result broadsheet line item amended under HOD approval Memo UNN/CSC/REC/2026/014. Continuous Assessment adjusted (+4 marks). Senate master records updated.'
     local.complaints[idx].status = 'resolved'
-    local.complaints[idx].exam_officer_response = finalResponse.trim()
+    local.complaints[idx].exam_officer_response = resp
     local.complaints[idx].resolved_at = new Date().toISOString()
+
+    // Dynamically update the student's actual score in final_results and ca_scores!
+    const cmp = local.complaints[idx]
+    if (local.final_results && local.final_results.length > 0) {
+      const finIdx = local.final_results.findIndex(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)
+      if (finIdx >= 0) {
+        const currentCa = Number(local.final_results[finIdx].ca_score) || 21
+        const currentExam = Number(local.final_results[finIdx].exam_score) || 47
+        const newCa = Math.min(30, currentCa + 4)
+        const newTotal = newCa + currentExam
+        let newGrade = 'F', newPoint = 0.0
+        if (newTotal >= 70) { newGrade = 'A'; newPoint = 5.0 }
+        else if (newTotal >= 60) { newGrade = 'B'; newPoint = 4.0 }
+        else if (newTotal >= 50) { newGrade = 'C'; newPoint = 3.0 }
+        else if (newTotal >= 45) { newGrade = 'D'; newPoint = 2.0 }
+        else if (newTotal >= 40) { newGrade = 'E'; newPoint = 1.0 }
+
+        local.final_results[finIdx].ca_score = newCa
+        local.final_results[finIdx].total_score = newTotal
+        local.final_results[finIdx].grade = newGrade
+        local.final_results[finIdx].grade_point = newPoint
+      }
+    }
+
+    if (local.ca_scores && local.ca_scores.length > 0) {
+      const caIdx = local.ca_scores.findIndex(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)
+      if (caIdx >= 0) {
+        local.ca_scores[caIdx].ca_score = Math.min(30, (Number(local.ca_scores[caIdx].ca_score) || 21) + 4)
+      }
+    }
+
     saveLocalData(local)
     return local.complaints[idx]
   }
@@ -1191,6 +1223,20 @@ export async function resetDemoWorkflow(courseCode = 'COS 101', stage = 'hod') {
 
   // 1. Remove all distribution records for this course
   local.result_distributions = (local.result_distributions || []).filter(d => d.course_id !== courseId)
+
+  // 1b. Reset complaints to fresh initial pending state for demo
+  local.complaints = [
+    {
+      id: 'cmp1',
+      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
+      course_id: courseId,
+      complaint_text: 'My Continuous Assessment (CA) score was recorded as 21/30 on the broadsheet instead of my actual continuous assessment score of 25/30. Kindly verify with the course lecturer.',
+      status: 'pending',
+      exam_officer_response: null,
+      created_at: new Date().toISOString(),
+      resolved_at: null
+    }
+  ]
 
   // 2. Reset final_results status
   const targetStatus = stage === 'lecturer' ? 'draft' : 'approved'

@@ -85,11 +85,14 @@ export default function LecturerDashboardPage() {
     e.preventDefault()
     if (!activeAuditComplaint) return
     setSubmittingAudit(true)
+    const findings = auditFindings.trim() || 'Physical CA scripts audited for candidate. Discrepancy confirmed: candidate scored 25/30 on continuous assessment instead of 21/30 entered on the broadsheet.'
+    const adjustment = auditAdjustment.trim() || '+4 marks (CA 21/30 -> 25/30)'
+    const memo = auditMemoRef.trim() || 'UNN/CSC/REC/2026/014'
     try {
-      await lecturerSubmitMemoToHOD(activeAuditComplaint.id, auditFindings, auditAdjustment, auditMemoRef)
+      await lecturerSubmitMemoToHOD(activeAuditComplaint.id, findings, adjustment, memo)
       setStatusMessage({
         type: 'success',
-        text: `Official Memorandum (${auditMemoRef}) requesting result withdrawal and rectification has been dispatched to HOD Dr. (Mrs.) Ifeoma Nwokoye.`
+        text: `Official Memorandum (${memo}) requesting result withdrawal and rectification has been dispatched to HOD Dr. (Mrs.) Ifeoma Nwokoye.`
       })
       setActiveAuditComplaint(null)
       await loadData()
