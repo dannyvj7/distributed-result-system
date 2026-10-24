@@ -48,7 +48,7 @@ export default function StudentComplaintPage() {
 
     setSubmitting(true)
     try {
-      await createComplaint(student.id, selectedCourseId, complaintText)
+      await createComplaint(student.id, selectedCourseId, complaintText, student.full_name, student.reg_number)
       setStatusMessage({
         type: 'success',
         text: 'Complaint submitted successfully! It has been forwarded to the Examination Office for investigation.'

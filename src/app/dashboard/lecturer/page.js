@@ -89,7 +89,9 @@ export default function LecturerDashboardPage() {
   const handleOpenAuditModal = (cmp) => {
     setActiveAuditComplaint(cmp)
     setAuditFindings('')
-    setAuditMemoRef('UNN/CSC/REC/2026/014')
+    const crs = courses.find(c => c.id === cmp.course_id)
+    const crsCode = crs?.code?.replace(/\s+/g, '') || 'CSC'
+    setAuditMemoRef(`UNN/${crsCode}/REC/2026/${cmp.id ? cmp.id.slice(-4).toUpperCase() : '014'}`)
     const current = caScores.find(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)?.ca_score
       || finalResults.find(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)?.ca_score
       || 20
@@ -253,9 +255,9 @@ export default function LecturerDashboardPage() {
                 <div key={cmp.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{student?.full_name || 'Candidate'}</span>
+                      <span className="font-bold text-slate-900">{cmp.student_name || student?.full_name || 'Candidate'}</span>
                       <span className="font-mono text-xs font-semibold text-primary bg-blue-50 px-2 py-0.5 rounded">
-                        {student?.reg_number}
+                        {cmp.student_reg_number || student?.reg_number}
                       </span>
                       <span className="text-xs font-semibold text-slate-600">
                         &bull; Course: <strong className="text-slate-900">{course?.code || 'COS 101'}</strong>
@@ -693,7 +695,7 @@ export default function LecturerDashboardPage() {
 
             <div className="my-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
               <p className="font-semibold text-slate-800">
-                Candidate: {students.find(s => s.id === activeAuditComplaint.student_id)?.full_name} ({students.find(s => s.id === activeAuditComplaint.student_id)?.reg_number})
+                Candidate: {activeAuditComplaint.student_name || students.find(s => s.id === activeAuditComplaint.student_id)?.full_name || 'Candidate'} ({activeAuditComplaint.student_reg_number || students.find(s => s.id === activeAuditComplaint.student_id)?.reg_number || ''})
               </p>
               <p className="text-slate-500 mt-0.5 italic">
                 Student Claim: "{activeAuditComplaint.complaint_text}"

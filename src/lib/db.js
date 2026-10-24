@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v15'
+const STORAGE_KEY = 'dist_results_system_data_v16'
 
 const initialSeedData = {
   departments: [
@@ -308,7 +308,7 @@ const initialSeedData = {
       session: '2025/26'
     },
 
-    // ── COS 201 Results (Draft - Ready for Dr. Ngozi Eze to Sign & Submit to HOD) ─
+    // ── COS 201 Results (Approved) ──────────────────────────────────
     {
       id: 'fr4',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
@@ -318,7 +318,7 @@ const initialSeedData = {
       total_score: 76,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
     {
@@ -330,7 +330,7 @@ const initialSeedData = {
       total_score: 85,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
     {
@@ -342,11 +342,11 @@ const initialSeedData = {
       total_score: 82,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
 
-    // ── COS 202 Results (Draft - Ready for Dr. Babatunde Fashola to Sign & Submit) ─
+    // ── COS 202 Results (Approved) ──────────────────────────────────
     {
       id: 'fr7',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
@@ -356,7 +356,7 @@ const initialSeedData = {
       total_score: 74,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
     {
@@ -368,7 +368,7 @@ const initialSeedData = {
       total_score: 79,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
     {
@@ -380,11 +380,11 @@ const initialSeedData = {
       total_score: 75,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
 
-    // ── COS 343 Results (Draft - Ready for Dr. Ifeanyi Ugwu to Sign & Submit) ──
+    // ── COS 343 Results (Approved) ──────────────────────────────────
     {
       id: 'fr10',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
@@ -394,7 +394,7 @@ const initialSeedData = {
       total_score: 80,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
     {
@@ -406,11 +406,11 @@ const initialSeedData = {
       total_score: 85,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     },
 
-    // ── COS 414 Results (Draft - Ready for Prof. Chukwuma Akpan to Sign & Submit) ─
+    // ── COS 414 Results (Approved) ──────────────────────────────────
     {
       id: 'fr12',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
@@ -420,7 +420,7 @@ const initialSeedData = {
       total_score: 83,
       grade: 'A',
       grade_point: 5.0,
-      status: 'draft',
+      status: 'approved',
       session: '2025/26'
     }
   ],
@@ -1299,11 +1299,14 @@ export async function getComplaints(studentId) {
   return local.complaints || []
 }
 
-export async function createComplaint(studentId, courseId, complaintText) {
+export async function createComplaint(studentId, courseId, complaintText, studentName = null, studentRegNumber = null) {
   const local = getLocalData()
+  const student = (local.students || []).find(s => s.id === studentId || (studentRegNumber && normalizeRegNumber(s.reg_number) === normalizeRegNumber(studentRegNumber)))
   const entry = {
     id: generateUUID(),
     student_id: studentId,
+    student_name: studentName || student?.full_name || 'Candidate',
+    student_reg_number: studentRegNumber || student?.reg_number || '',
     course_id: courseId,
     complaint_text: complaintText.trim(),
     status: 'pending',

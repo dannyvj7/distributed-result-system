@@ -186,9 +186,9 @@ export default function ExamOfficerComplaintsPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900">{student?.full_name || 'Student'}</span>
+                        <span className="font-bold text-slate-900">{cmp.student_name || student?.full_name || 'Student'}</span>
                         <span className="font-mono text-xs font-semibold text-primary bg-blue-50 px-2 py-0.5 rounded">
-                          {student?.reg_number}
+                          {cmp.student_reg_number || student?.reg_number}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
@@ -322,7 +322,7 @@ export default function ExamOfficerComplaintsPage() {
 
             <div className="my-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
               <p className="font-semibold text-slate-800">
-                Candidate: {students.find(s => s.id === activeComplaint.student_id)?.full_name} ({students.find(s => s.id === activeComplaint.student_id)?.reg_number})
+                Candidate: {activeComplaint.student_name || students.find(s => s.id === activeComplaint.student_id)?.full_name || 'Candidate'} ({activeComplaint.student_reg_number || students.find(s => s.id === activeComplaint.student_id)?.reg_number || ''})
               </p>
               <p className="text-slate-500 mt-0.5">
                 Course: {courses.find(c => c.id === activeComplaint.course_id)?.code} - {courses.find(c => c.id === activeComplaint.course_id)?.title}

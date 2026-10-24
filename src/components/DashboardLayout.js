@@ -76,7 +76,8 @@ export default function DashboardLayout({ children, title, roleRequired }) {
       { label: 'Results', href: '/dashboard/hod/results', icon: BookOpen },
       { label: 'Distribute Results', href: '/dashboard/hod/distribute', icon: Send },
       { label: 'Received Results', href: '/dashboard/hod/received', icon: Inbox },
-      { label: 'Acknowledge', href: '/dashboard/hod/acknowledge', icon: FileCheck }
+      { label: 'Acknowledge', href: '/dashboard/hod/acknowledge', icon: FileCheck },
+      { label: 'Dispute Approvals', href: '/dashboard/hod/complaints', icon: AlertCircle }
     ],
     exam_officer: [
       { label: 'Dashboard', href: '/dashboard/exam-officer', icon: LayoutDashboard },

@@ -215,9 +215,18 @@ export default function HodDashboardPage() {
                 </p>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 self-start sm:self-auto">
-              Departmental Board Review
-            </span>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              <Link
+                href="/dashboard/hod/complaints"
+                className="px-3 py-1 rounded-lg text-xs font-bold bg-purple-700 hover:bg-purple-800 text-white shadow-xs transition flex items-center gap-1"
+              >
+                <span>Full Dispute Desk</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                Departmental Board Review
+              </span>
+            </div>
           </div>
 
           <div className="p-5 divide-y divide-slate-100">
@@ -232,9 +241,9 @@ export default function HodDashboardPage() {
                 <div key={cmp.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{student?.full_name || 'Candidate'}</span>
+                      <span className="font-bold text-slate-900">{cmp.student_name || student?.full_name || 'Candidate'}</span>
                       <span className="font-mono text-xs font-semibold text-primary bg-blue-50 px-2 py-0.5 rounded">
-                        {student?.reg_number}
+                        {cmp.student_reg_number || student?.reg_number}
                       </span>
                       <span className="text-xs font-semibold text-slate-600">
                         &bull; Course: <strong className="text-slate-900">{course?.code || 'COS 101'}</strong>
@@ -443,13 +452,13 @@ export default function HodDashboardPage() {
               <div className="flex justify-between">
                 <span className="text-slate-500">Candidate:</span>
                 <span className="font-bold text-slate-800">
-                  {students.find(s => s.id === activeRectification.student_id)?.full_name} ({students.find(s => s.id === activeRectification.student_id)?.reg_number})
+                  {activeRectification.student_name || students.find(s => s.id === activeRectification.student_id)?.full_name || 'Candidate'} ({activeRectification.student_reg_number || students.find(s => s.id === activeRectification.student_id)?.reg_number || '2022/234567'})
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Course & Dept:</span>
                 <span className="font-semibold text-slate-800">
-                  {courses.find(c => c.id === activeRectification.course_id)?.code} &bull; Computer Science
+                  {courses.find(c => c.id === activeRectification.course_id)?.code} &bull; {myDept?.name || 'Computer Science'}
                 </span>
               </div>
               <div className="flex justify-between">
