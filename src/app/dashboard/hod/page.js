@@ -245,7 +245,7 @@ export default function HodDashboardPage() {
                       "{cmp.lecturer_findings}"
                     </p>
                     <div className="flex flex-wrap items-center gap-4 mt-2 text-[11px] text-slate-500">
-                      <span>Requested Correction: <strong className="text-emerald-700">{cmp.requested_adjustment || '+4 marks'}</strong></span>
+                      <span>Requested Correction: <strong className="text-emerald-700">{cmp.requested_adjustment || 'Score Rectification'}</strong></span>
                       <span>Memo Ref: <strong className="font-mono text-slate-700">{cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong></span>
                       {cmp.hod_signed_by && (
                         <span>Sanctioned by: <strong className="text-purple-900 font-semibold">{cmp.hod_signed_by}</strong></span>

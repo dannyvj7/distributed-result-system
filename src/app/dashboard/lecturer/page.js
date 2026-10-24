@@ -96,8 +96,8 @@ export default function LecturerDashboardPage() {
     e.preventDefault()
     if (!activeAuditComplaint) return
     setSubmittingAudit(true)
-    const findings = auditFindings.trim() || 'Physical CA scripts audited for candidate. Discrepancy confirmed: candidate scored 25/30 on continuous assessment instead of 21/30 entered on the broadsheet.'
-    const adjustment = auditAdjustment.trim() || '+4 marks (CA 21/30 -> 25/30)'
+    const findings = auditFindings.trim() || 'Physical Continuous Assessment scripts audited for candidate. Discrepancy confirmed against marked test script and recommended for broadsheet rectification.'
+    const adjustment = auditAdjustment.trim() || 'Continuous Assessment score verified and recommended for amendment'
     const memo = auditMemoRef.trim() || 'UNN/CSC/REC/2026/014'
     try {
       await lecturerSubmitMemoToHOD(activeAuditComplaint.id, findings, adjustment, memo)
@@ -703,15 +703,15 @@ export default function LecturerDashboardPage() {
                   required
                   value={auditFindings}
                   onChange={(e) => setAuditFindings(e.target.value)}
-                  placeholder="Enter your verification findings from the physical continuous assessment scripts (e.g. Audited physical Continuous Assessment scripts for candidate. Discrepancy confirmed: candidate scored 25/30 on CA instead of 21/30 entered on the broadsheet)..."
+                  placeholder="Enter your verification findings from the physical continuous assessment scripts (e.g. Audited physical Continuous Assessment scripts for candidate. Discrepancy confirmed against marked test script and recommended for broadsheet rectification)..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs"
                 />
                 {!auditFindings && (
                   <button
                     type="button"
                     onClick={() => {
-                      setAuditFindings("Audited physical Continuous Assessment scripts for candidate. Transcription discrepancy confirmed: candidate scored 25/30 on continuous assessment instead of 21/30 recorded on the broadsheet.")
-                      setAuditAdjustment("+4 marks (CA 21/30 -> 25/30)")
+                      setAuditFindings("Audited physical Continuous Assessment scripts for candidate. Discrepancy confirmed against marked test script and recommended for broadsheet rectification.")
+                      setAuditAdjustment("Continuous Assessment score verified and recommended for amendment")
                     }}
                     className="text-[11px] text-amber-700 hover:underline font-medium mt-1 inline-block"
                   >
@@ -730,7 +730,7 @@ export default function LecturerDashboardPage() {
                     required
                     value={auditAdjustment}
                     onChange={(e) => setAuditAdjustment(e.target.value)}
-                    placeholder="e.g. +4 marks (CA 21/30 -> 25/30)"
+                    placeholder="e.g. Continuous Assessment adjustment verified upon script audit"
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-emerald-700"
                   />
                 </div>
@@ -753,7 +753,7 @@ export default function LecturerDashboardPage() {
                 <p className="font-semibold mb-1 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-amber-700" /> Formal Notice to Head of Department:
                 </p>
-                "I, {user?.full_name || 'Dr. Aminu Ibrahim'}, hereby certify that upon auditing the physical test booklets, a transcription error occurred. I formally request the HOD Dr. (Mrs.) Ifeoma Nwokoye to grant administrative approval to withdraw this broadsheet line item and sanction the score adjustment."
+                "I, {user?.full_name || 'the Course Lecturer'}, hereby certify that upon auditing the physical test booklets, a transcription error occurred. I formally request the HOD Dr. (Mrs.) Ifeoma Nwokoye to grant administrative approval to withdraw this broadsheet line item and sanction the score adjustment."
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">

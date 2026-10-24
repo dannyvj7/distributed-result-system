@@ -71,12 +71,12 @@ export default function ExamOfficerComplaintsPage() {
     if (!activeComplaint) return
 
     setResolving(true)
-    const resp = responseText.trim() || `Physical script audit confirmed by Course Lecturer Dr. Ibrahim. Result broadsheet line item amended under HOD approval Memo ${activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment adjusted from 21/30 to 25/30. Final Senate master records updated.`
+    const resp = responseText.trim() || `Physical script audit confirmed by the Course Lecturer. Result broadsheet line item amended under HOD approval Memo ${activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment score rectified and Senate master records updated.`
     try {
       await resolveComplaint(activeComplaint.id, resp)
       setStatusMessage({
         type: 'success',
-        text: 'Result dispute formally resolved under HOD sanction. Candidate broadsheet score updated (+4 marks) and student notified.'
+        text: 'Result dispute formally resolved under HOD sanction. Candidate broadsheet score updated and student notified.'
       })
       setActiveComplaint(null)
       await loadData()
@@ -410,7 +410,7 @@ export default function ExamOfficerComplaintsPage() {
                 <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
                   <div className="flex items-center gap-2 font-bold">
                     <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                    <span>Dispatched to Course Lecturer (Dr. Aminu Ibrahim)</span>
+                    <span>Dispatched to the Course Lecturer for Script Audit</span>
                   </div>
                   <p className="text-amber-800">
                     The lecturer must retrieve physical continuous assessment scripts, audit scores, and submit a formal memorandum to the HOD.
@@ -436,7 +436,7 @@ export default function ExamOfficerComplaintsPage() {
                     HOD Dr. (Mrs.) Ifeoma Nwokoye has formally approved broadsheet withdrawal and score adjustment under Memo <strong className="font-mono">{activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong>.
                   </p>
                   <div className="text-[11px] text-emerald-700 font-mono">
-                    Adjustment: {activeComplaint.requested_adjustment || '+4 marks'} &bull; Digital Signature Verified
+                    Adjustment: {activeComplaint.requested_adjustment || 'Score Rectification'} &bull; Digital Signature Verified
                   </div>
                 </div>
               )}
@@ -464,13 +464,13 @@ export default function ExamOfficerComplaintsPage() {
                 disabled={activeComplaint.status !== 'hod_approved'}
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
-                placeholder="Enter final Senate resolution and master record update details (e.g. Physical script audit confirmed by Course Lecturer. Result broadsheet line item amended under HOD approval Memo UNN/CSC/REC/2026/014. Continuous Assessment adjusted to 25/30. Final Senate master records updated)..."
+                placeholder="Enter final Senate resolution and master record update details (e.g. Physical script audit confirmed by the Course Lecturer. Result broadsheet line item amended under HOD approval. Continuous Assessment score rectified and Senate master records updated)..."
                 className="w-full px-3 py-2 text-xs border border-emerald-300 rounded-lg focus:ring-emerald-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
               />
               {!responseText && activeComplaint.status === 'hod_approved' && (
                 <button
                   type="button"
-                  onClick={() => setResponseText(`Physical script audit confirmed by Course Lecturer Dr. Ibrahim. Result broadsheet line item amended under HOD approval Memo ${activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment adjusted from 21/30 to 25/30. Final Senate master records updated.`)}
+                  onClick={() => setResponseText(`Physical script audit confirmed by the Course Lecturer. Result broadsheet line item amended under HOD approval Memo ${activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment score rectified and final Senate master records updated.`)}
                   className="text-[11px] text-emerald-700 hover:underline font-medium mt-1 inline-block"
                 >
                   + Use Standard Senate Resolution Template

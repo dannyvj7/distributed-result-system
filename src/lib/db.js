@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v13'
+const STORAGE_KEY = 'dist_results_system_data_v14'
 
 const initialSeedData = {
   departments: [
@@ -1329,12 +1329,12 @@ export async function referComplaintToLecturer(complaintId, referralNote) {
   return null
 }
 
-export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = '+4 marks (CA 21/30 -> 25/30)', memoRef = 'UNN/CSC/REC/2026/014') {
+export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = 'Continuous Assessment score verified and recommended for amendment', memoRef = 'UNN/CSC/REC/2026/014') {
   const local = getLocalData()
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
     local.complaints[idx].status = 'awaiting_hod_approval'
-    local.complaints[idx].lecturer_findings = findings ? findings.trim() : 'Physical CA scripts audited. Transcription discrepancy confirmed: candidate scored 25/30 on continuous assessment instead of 21/30 entered on the broadsheet.'
+    local.complaints[idx].lecturer_findings = findings ? findings.trim() : 'Physical Continuous Assessment scripts audited for candidate. Discrepancy confirmed against marked test script and recommended for broadsheet rectification.'
     local.complaints[idx].requested_adjustment = requestedAdjustment
     local.complaints[idx].hod_memo_ref = memoRef
     local.complaints[idx].lecturer_memo_date = new Date().toISOString()
@@ -1359,45 +1359,51 @@ export async function hodApproveWithdrawal(complaintId, hodNotes = 'Approved for
 }
 
 export async function submitLecturerRectification(complaintId, lecturerFindings, memoRef = 'UNN/CSC/REC/2026/014') {
-  return lecturerSubmitMemoToHOD(complaintId, lecturerFindings, '+4 marks (CA 21 -> 25)', memoRef)
+  return lecturerSubmitMemoToHOD(complaintId, lecturerFindings, 'Continuous Assessment score verified and recommended for amendment', memoRef)
 }
 
 export async function examOfficerFinalizeRectification(complaintId, finalResponse) {
   const local = getLocalData()
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
-    const resp = finalResponse ? finalResponse.trim() : 'Physical script audit confirmed by Course Lecturer. Result broadsheet line item amended under HOD approval Memo UNN/CSC/REC/2026/014. Continuous Assessment adjusted (+4 marks). Senate master records updated.'
+    const cmp = local.complaints[idx]
+    const resp = finalResponse ? finalResponse.trim() : `Physical script audit confirmed by the Course Lecturer. Result broadsheet line item amended under HOD approval Memo ${cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment score rectified and Senate master records updated.`
     local.complaints[idx].status = 'resolved'
     local.complaints[idx].exam_officer_response = resp
     local.complaints[idx].resolved_at = new Date().toISOString()
 
     // Dynamically update the student's actual score in final_results and ca_scores!
-    const cmp = local.complaints[idx]
     if (local.final_results && local.final_results.length > 0) {
       const finIdx = local.final_results.findIndex(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)
       if (finIdx >= 0) {
-        const currentCa = Number(local.final_results[finIdx].ca_score) || 21
-        const currentExam = Number(local.final_results[finIdx].exam_score) || 47
-        const newCa = Math.min(30, currentCa + 4)
+        const currentCa = Number(local.final_results[finIdx].ca_score) || 20
+        const currentExam = Number(local.final_results[finIdx].exam_score) || 50
+        
+        let delta = 4
+        if (cmp.requested_adjustment) {
+          const matchPlus = cmp.requested_adjustment.match(/\+(\d+)/)
+          if (matchPlus) delta = parseInt(matchPlus[1], 10)
+        }
+        const newCa = Math.min(30, currentCa + delta)
         const newTotal = newCa + currentExam
-        let newGrade = 'F', newPoint = 0.0
-        if (newTotal >= 70) { newGrade = 'A'; newPoint = 5.0 }
-        else if (newTotal >= 60) { newGrade = 'B'; newPoint = 4.0 }
-        else if (newTotal >= 50) { newGrade = 'C'; newPoint = 3.0 }
-        else if (newTotal >= 45) { newGrade = 'D'; newPoint = 2.0 }
-        else if (newTotal >= 40) { newGrade = 'E'; newPoint = 1.0 }
+        const { grade, gradePoint } = calculateGrade(newTotal)
 
         local.final_results[finIdx].ca_score = newCa
         local.final_results[finIdx].total_score = newTotal
-        local.final_results[finIdx].grade = newGrade
-        local.final_results[finIdx].grade_point = newPoint
+        local.final_results[finIdx].grade = grade
+        local.final_results[finIdx].grade_point = gradePoint
       }
     }
 
     if (local.ca_scores && local.ca_scores.length > 0) {
       const caIdx = local.ca_scores.findIndex(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)
       if (caIdx >= 0) {
-        local.ca_scores[caIdx].ca_score = Math.min(30, (Number(local.ca_scores[caIdx].ca_score) || 21) + 4)
+        let delta = 4
+        if (cmp.requested_adjustment) {
+          const matchPlus = cmp.requested_adjustment.match(/\+(\d+)/)
+          if (matchPlus) delta = parseInt(matchPlus[1], 10)
+        }
+        local.ca_scores[caIdx].ca_score = Math.min(30, (Number(local.ca_scores[caIdx].ca_score) || 20) + delta)
       }
     }
 

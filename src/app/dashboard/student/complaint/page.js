@@ -111,7 +111,7 @@ export default function StudentComplaintPage() {
                 required
                 value={complaintText}
                 onChange={(e) => setComplaintText(e.target.value)}
-                placeholder="Explain the score issue in detail (e.g., Continuous Assessment score was recorded as 21/30 on the broadsheet instead of my actual continuous assessment score of 25/30)."
+                placeholder="Explain the score issue in detail (e.g., Discrepancy observed between recorded continuous assessment score on broadsheet and marked physical test script. Kindly verify with the course lecturer)."
                 className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
               />
             </div>
