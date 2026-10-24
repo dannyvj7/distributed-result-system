@@ -35,7 +35,7 @@ export default function HodDashboardPage() {
 
   // HOD Approval Modal State
   const [activeRectification, setActiveRectification] = useState(null)
-  const [hodNotes, setHodNotes] = useState('Executive approval granted to withdraw broadsheet line item and sanction the requested Continuous Assessment adjustment based on lecturer script audit.')
+  const [hodNotes, setHodNotes] = useState('')
   const [approving, setApproving] = useState(false)
 
   const loadData = async () => {
@@ -439,9 +439,25 @@ export default function HodDashboardPage() {
               <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-purple-900 mb-1">
                 <ShieldCheck className="w-4 h-4 text-purple-700" /> Executive Board Sanction
               </div>
-              <p>
+              <p className="mb-2">
                 As Head of Department and Chairman of the Departmental Board of Examiners, I hereby grant executive approval to withdraw and amend the broadsheet line item for this candidate based on the course lecturer's physical script audit. The Examinations Officer is hereby authorized to synchronize this adjustment with Senate records.
               </p>
+              <textarea
+                rows={2}
+                value={hodNotes}
+                onChange={(e) => setHodNotes(e.target.value)}
+                placeholder="Optional HOD endorsement remarks (e.g. Executive approval granted to withdraw broadsheet line item and sanction score adjustment based on verified script audit)..."
+                className="w-full px-3 py-2 text-xs border border-purple-300 rounded-lg focus:ring-primary focus:outline-none bg-white text-slate-800"
+              />
+              {!hodNotes && (
+                <button
+                  type="button"
+                  onClick={() => setHodNotes('Executive approval granted to withdraw broadsheet line item and sanction the requested Continuous Assessment adjustment based on lecturer script audit.')}
+                  className="text-[11px] text-purple-700 hover:underline font-medium mt-1 inline-block"
+                >
+                  + Use Standard Approval Remark
+                </button>
+              )}
             </div>
 
             {/* HOD Signature Box */}

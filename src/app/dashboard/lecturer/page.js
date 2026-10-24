@@ -29,9 +29,9 @@ export default function LecturerDashboardPage() {
 
   // Script Audit Modal State
   const [activeAuditComplaint, setActiveAuditComplaint] = useState(null)
-  const [auditFindings, setAuditFindings] = useState('Physical CA test script audited. Discrepancy confirmed on Test 2: candidate scored 14/15 instead of 10/15 recorded. Verified adjustment: +4 marks.')
+  const [auditFindings, setAuditFindings] = useState('')
   const [auditMemoRef, setAuditMemoRef] = useState('UNN/CSC/REC/2026/014')
-  const [auditAdjustment, setAuditAdjustment] = useState('+4 marks (CA 21 -> 25)')
+  const [auditAdjustment, setAuditAdjustment] = useState('')
   const [submittingAudit, setSubmittingAudit] = useState(false)
 
   const loadData = async () => {
@@ -76,9 +76,9 @@ export default function LecturerDashboardPage() {
 
   const handleOpenAuditModal = (cmp) => {
     setActiveAuditComplaint(cmp)
-    setAuditFindings('Physical CA test script audited. Discrepancy confirmed on Test 2: candidate scored 14/15 instead of 10/15 recorded. Verified adjustment: +4 marks.')
+    setAuditFindings('')
+    setAuditAdjustment('')
     setAuditMemoRef('UNN/CSC/REC/2026/014')
-    setAuditAdjustment('+4 marks (CA 21 -> 25)')
   }
 
   const handleSubmitAuditMemo = async (e) => {
@@ -670,8 +670,21 @@ export default function LecturerDashboardPage() {
                   required
                   value={auditFindings}
                   onChange={(e) => setAuditFindings(e.target.value)}
+                  placeholder="Enter your verification findings from the physical continuous assessment scripts (e.g. Audited physical Continuous Assessment scripts for candidate. Discrepancy confirmed: candidate scored 25/30 on CA instead of 21/30 entered on the broadsheet)..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs"
                 />
+                {!auditFindings && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuditFindings("Audited physical Continuous Assessment scripts for candidate. Transcription discrepancy confirmed: candidate scored 25/30 on continuous assessment instead of 21/30 recorded on the broadsheet.")
+                      setAuditAdjustment("+4 marks (CA 21/30 -> 25/30)")
+                    }}
+                    className="text-[11px] text-amber-700 hover:underline font-medium mt-1 inline-block"
+                  >
+                    + Use Sample Script Audit Note
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -684,6 +697,7 @@ export default function LecturerDashboardPage() {
                     required
                     value={auditAdjustment}
                     onChange={(e) => setAuditAdjustment(e.target.value)}
+                    placeholder="e.g. +4 marks (CA 21/30 -> 25/30)"
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-emerald-700"
                   />
                 </div>
@@ -696,6 +710,7 @@ export default function LecturerDashboardPage() {
                     required
                     value={auditMemoRef}
                     onChange={(e) => setAuditMemoRef(e.target.value)}
+                    placeholder="e.g. UNN/CSC/REC/2026/014"
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-mono"
                   />
                 </div>

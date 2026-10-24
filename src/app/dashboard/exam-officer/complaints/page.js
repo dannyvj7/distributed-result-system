@@ -14,7 +14,7 @@ export default function ExamOfficerComplaintsPage() {
 
   // Response / Protocol Modal State
   const [activeComplaint, setActiveComplaint] = useState(null)
-  const [referralNote, setReferralNote] = useState('Kindly retrieve candidate\'s physical Continuous Assessment scripts and verify against submitted score roster.')
+  const [referralNote, setReferralNote] = useState('')
   const [responseText, setResponseText] = useState('')
   const [resolving, setResolving] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
@@ -41,8 +41,8 @@ export default function ExamOfficerComplaintsPage() {
 
   const handleOpenResponse = (cmp) => {
     setActiveComplaint(cmp)
-    setReferralNote(cmp.referral_note || 'Kindly retrieve candidate\'s physical Continuous Assessment scripts and verify against submitted score roster.')
-    setResponseText(cmp.exam_officer_response || `Physical script audit confirmed by Course Lecturer. Result withdrawal and amendment approved by HOD under Memo ${cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Candidate's Continuous Assessment score adjusted (+4 marks). Senate master records updated.`)
+    setReferralNote(cmp.referral_note || '')
+    setResponseText(cmp.exam_officer_response || '')
   }
 
   // Action 1: Forward to Lecturer
@@ -326,14 +326,24 @@ export default function ExamOfficerComplaintsPage() {
                 disabled={activeComplaint.status !== 'pending'}
                 value={referralNote}
                 onChange={(e) => setReferralNote(e.target.value)}
+                placeholder="Type your official directive to the course lecturer (e.g. Please retrieve candidate's physical Continuous Assessment scripts and verify recorded marks against submitted score roster)..."
                 className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-primary focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
               />
+              {!referralNote && activeComplaint.status === 'pending' && (
+                <button
+                  type="button"
+                  onClick={() => setReferralNote("Kindly retrieve candidate's physical Continuous Assessment (CA) scripts and verify recorded marks against submitted score roster.")}
+                  className="text-[11px] text-primary hover:underline font-medium mt-1 inline-block"
+                >
+                  + Use Standard Directive Template
+                </button>
+              )}
               {activeComplaint.status === 'pending' && (
                 <div className="mt-2 flex justify-end">
                   <button
                     onClick={handleReferToLecturer}
-                    disabled={resolving}
-                    className="px-4 py-1.5 bg-primary hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                    disabled={resolving || !referralNote.trim()}
+                    className="px-4 py-1.5 bg-primary hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50"
                   >
                     <UserCheck className="w-3.5 h-3.5" />
                     Dispatch to Lecturer Desk
@@ -430,9 +440,18 @@ export default function ExamOfficerComplaintsPage() {
                 disabled={activeComplaint.status !== 'hod_approved'}
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
-                placeholder="Final Examination Office resolution text to be displayed on student result statement..."
+                placeholder="Enter final Senate resolution and master record update details (e.g. Physical script audit confirmed by Course Lecturer. Result broadsheet line item amended under HOD approval Memo UNN/CSC/REC/2026/014. Continuous Assessment adjusted to 25/30. Final Senate master records updated)..."
                 className="w-full px-3 py-2 text-xs border border-emerald-300 rounded-lg focus:ring-emerald-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
               />
+              {!responseText && activeComplaint.status === 'hod_approved' && (
+                <button
+                  type="button"
+                  onClick={() => setResponseText(`Physical script audit confirmed by Course Lecturer Dr. Ibrahim. Result broadsheet line item amended under HOD approval Memo ${activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment adjusted from 21/30 to 25/30. Final Senate master records updated.`)}
+                  className="text-[11px] text-emerald-700 hover:underline font-medium mt-1 inline-block"
+                >
+                  + Use Standard Senate Resolution Template
+                </button>
+              )}
               {activeComplaint.status !== 'hod_approved' && activeComplaint.status !== 'resolved' && (
                 <p className="text-[11px] text-slate-500 mt-1 italic">
                   * Senate score rectification is locked until the Head of Department approves the broadsheet withdrawal.

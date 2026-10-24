@@ -350,7 +350,7 @@ const initialSeedData = {
       id: 'cmp1',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
       course_id: 'c1111111-1111-1111-1111-111111111111',
-      complaint_text: 'My continuous assessment test 2 score was 14/15 instead of 10 recorded. Please verify with course lecturer.',
+      complaint_text: 'My Continuous Assessment (CA) score was recorded as 21/30 on the broadsheet instead of my actual continuous assessment score of 25/30. Kindly verify with the course lecturer.',
       status: 'pending',
       exam_officer_response: null,
       created_at: new Date(Date.now() - 3600000 * 12).toISOString(),
@@ -1131,12 +1131,12 @@ export async function referComplaintToLecturer(complaintId, referralNote) {
   return null
 }
 
-export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = '+4 marks (CA 21 -> 25)', memoRef = 'UNN/CSC/REC/2026/014') {
+export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = '+4 marks (CA 21/30 -> 25/30)', memoRef = 'UNN/CSC/REC/2026/014') {
   const local = getLocalData()
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
     local.complaints[idx].status = 'awaiting_hod_approval'
-    local.complaints[idx].lecturer_findings = findings ? findings.trim() : 'Physical CA test script audited. Test 2 score was 14/15 instead of 10 recorded due to transcription error.'
+    local.complaints[idx].lecturer_findings = findings ? findings.trim() : 'Physical CA scripts audited. Transcription discrepancy confirmed: candidate scored 25/30 on continuous assessment instead of 21/30 entered on the broadsheet.'
     local.complaints[idx].requested_adjustment = requestedAdjustment
     local.complaints[idx].hod_memo_ref = memoRef
     local.complaints[idx].lecturer_memo_date = new Date().toISOString()
