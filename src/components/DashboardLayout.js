@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 
 export default function DashboardLayout({ children, title, roleRequired }) {
-  const { user, loading, logout, switchPersona, loginStaff } = useAuth()
+  const { user, loading, logout } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -188,67 +188,6 @@ export default function DashboardLayout({ children, title, roleRequired }) {
             )
           })}
         </nav>
-
-        {/* Quick Persona Switcher for effortless testing */}
-        <div className="p-3 border-t border-blue-900/60 bg-blue-950/30">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-blue-300/80 mb-2 px-1">
-            Switch Role Persona (Testing)
-          </p>
-          <div className="grid grid-cols-3 gap-1">
-            <button
-              onClick={() => switchPersona('admin')}
-              className={`text-[11px] py-1 px-1.5 rounded text-center transition ${currentRole === 'admin' ? 'bg-blue-500 font-bold text-white' : 'bg-blue-900/50 hover:bg-blue-800 text-blue-200'}`}
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => switchPersona('lecturer')}
-              className={`text-[11px] py-1 px-1.5 rounded text-center transition ${currentRole === 'lecturer' ? 'bg-blue-500 font-bold text-white' : 'bg-blue-900/50 hover:bg-blue-800 text-blue-200'}`}
-            >
-              Lecturer
-            </button>
-            <button
-              onClick={() => switchPersona('hod')}
-              className={`text-[11px] py-1 px-1.5 rounded text-center transition ${currentRole === 'hod' ? 'bg-blue-500 font-bold text-white' : 'bg-blue-900/50 hover:bg-blue-800 text-blue-200'}`}
-            >
-              HOD
-            </button>
-            <button
-              onClick={() => switchPersona('exam_officer')}
-              className={`text-[11px] py-1 px-1.5 rounded text-center transition ${currentRole === 'exam_officer' ? 'bg-blue-500 font-bold text-white' : 'bg-blue-900/50 hover:bg-blue-800 text-blue-200'}`}
-            >
-              Exam Off.
-            </button>
-            <button
-              onClick={() => switchPersona('student')}
-              className={`text-[11px] py-1 px-1.5 rounded text-center transition ${currentRole === 'student' ? 'bg-blue-500 font-bold text-white' : 'bg-blue-900/50 hover:bg-blue-800 text-blue-200'}`}
-            >
-              Student
-            </button>
-          </div>
-
-          {currentRole === 'lecturer' && (
-            <div className="mt-2.5 pt-2 border-t border-blue-900/40">
-              <span className="text-[9px] uppercase font-bold text-blue-300 block mb-1">
-                Allocated Lecturer:
-              </span>
-              <select
-                value={user?.email}
-                onChange={async (e) => {
-                  await loginStaff(e.target.value, 'password123')
-                  window.location.reload()
-                }}
-                className="w-full text-[11px] bg-blue-900 text-white rounded px-1.5 py-1 border border-blue-700 focus:outline-none"
-              >
-                <option value="lecturer.csc@institution.edu.ng">Dr. Aminu Ibrahim (COS 101)</option>
-                <option value="lecturer.eze@institution.edu.ng">Dr. Ngozi Eze (COS 201)</option>
-                <option value="lecturer.fashola@institution.edu.ng">Dr. Babatunde Fashola (COS 202)</option>
-                <option value="lecturer.ugwu@institution.edu.ng">Dr. Ifeanyi Ugwu (COS 343)</option>
-                <option value="lecturer.akpan@institution.edu.ng">Prof. Chukwuma Akpan (COS 414)</option>
-              </select>
-            </div>
-          )}
-        </div>
 
         {/* Logout Button */}
         <div className="p-3 border-t border-blue-900/60">

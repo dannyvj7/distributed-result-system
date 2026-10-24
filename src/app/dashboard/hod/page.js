@@ -201,7 +201,7 @@ export default function HodDashboardPage() {
       </div>
 
       {/* Broadsheet Withdrawal & Rectification Requests */}
-      {complaints.filter(c => c.status === 'awaiting_hod_approval').length > 0 && (
+      {complaints.filter(c => ['awaiting_hod_approval', 'hod_approved', 'resolved'].includes(c.status)).length > 0 && (
         <div className="bg-white rounded-xl border border-purple-200 shadow-xs overflow-hidden mb-8">
           <div className="p-5 border-b border-purple-100 bg-purple-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -216,14 +216,17 @@ export default function HodDashboardPage() {
               </div>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 self-start sm:self-auto">
-              Awaiting HOD Signature
+              Departmental Board Review
             </span>
           </div>
 
           <div className="p-5 divide-y divide-slate-100">
-            {complaints.filter(c => c.status === 'awaiting_hod_approval').map(cmp => {
+            {complaints.filter(c => ['awaiting_hod_approval', 'hod_approved', 'resolved'].includes(c.status)).map(cmp => {
               const student = students.find(s => s.id === cmp.student_id)
               const course = courses.find(c => c.id === cmp.course_id)
+              const isAwaiting = cmp.status === 'awaiting_hod_approval'
+              const isHodApproved = cmp.status === 'hod_approved'
+              const isResolved = cmp.status === 'resolved'
 
               return (
                 <div key={cmp.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -241,20 +244,45 @@ export default function HodDashboardPage() {
                       <span className="font-bold text-purple-900 block text-[10px] uppercase">Lecturer Written Memorandum:</span>
                       "{cmp.lecturer_findings}"
                     </p>
-                    <div className="flex items-center gap-4 mt-1 text-[11px] text-slate-500">
+                    <div className="flex flex-wrap items-center gap-4 mt-2 text-[11px] text-slate-500">
                       <span>Requested Correction: <strong className="text-emerald-700">{cmp.requested_adjustment || '+4 marks'}</strong></span>
                       <span>Memo Ref: <strong className="font-mono text-slate-700">{cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong></span>
+                      {cmp.hod_signed_by && (
+                        <span>Sanctioned by: <strong className="text-purple-900 font-semibold">{cmp.hod_signed_by}</strong></span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="shrink-0">
-                    <button
-                      onClick={() => setActiveRectification(cmp)}
-                      className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-900/20 transition flex items-center gap-1.5"
-                    >
-                      <PenTool className="w-3.5 h-3.5" />
-                      Review & Sanction Withdrawal
-                    </button>
+                  <div className="shrink-0 flex items-center">
+                    {isAwaiting ? (
+                      <button
+                        onClick={() => setActiveRectification(cmp)}
+                        className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-900/20 transition flex items-center gap-1.5"
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        Review & Sanction Withdrawal
+                      </button>
+                    ) : isHodApproved ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 text-right space-y-1">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          HOD Sanctioned & Dispatched
+                        </span>
+                        <p className="text-[11px] text-emerald-900 font-medium">
+                          Signed & dispatched to Examination Office for Broadsheet adjustment.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-right space-y-1">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800 bg-blue-100/80 px-2.5 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                          Broadsheet Rectified by Senate
+                        </span>
+                        <p className="text-[11px] text-blue-900 font-medium">
+                          Scores updated in Master Broadsheet.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )

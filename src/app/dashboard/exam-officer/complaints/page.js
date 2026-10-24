@@ -138,8 +138,9 @@ export default function ExamOfficerComplaintsPage() {
           <option value="ALL">All Complaints ({complaints.length})</option>
           <option value="pending">Pending Referral ({complaints.filter(c => c.status === 'pending').length})</option>
           <option value="referred_to_lecturer">With Lecturer ({complaints.filter(c => c.status === 'referred_to_lecturer').length})</option>
-          <option value="lecturer_verified">HOD Memo Approved ({complaints.filter(c => c.status === 'lecturer_verified').length})</option>
-          <option value="resolved">Resolved ({complaints.filter(c => c.status === 'resolved').length})</option>
+          <option value="awaiting_hod_approval">Awaiting HOD Sanction ({complaints.filter(c => c.status === 'awaiting_hod_approval').length})</option>
+          <option value="hod_approved">HOD Sanctioned / Ready to Rectify ({complaints.filter(c => c.status === 'hod_approved').length})</option>
+          <option value="resolved">Resolved & Synced ({complaints.filter(c => c.status === 'resolved').length})</option>
         </select>
       </div>
 
@@ -158,8 +159,9 @@ export default function ExamOfficerComplaintsPage() {
             const student = students.find(s => s.id === cmp.student_id)
             const course = courses.find(c => c.id === cmp.course_id)
             const isResolved = cmp.status === 'resolved'
+            const isHodApproved = cmp.status === 'hod_approved'
+            const isAwaitingHod = cmp.status === 'awaiting_hod_approval'
             const isReferred = cmp.status === 'referred_to_lecturer'
-            const isVerified = cmp.status === 'lecturer_verified'
             const isPending = cmp.status === 'pending'
 
             return (
@@ -171,13 +173,15 @@ export default function ExamOfficerComplaintsPage() {
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                       isResolved ? 'bg-emerald-50 text-emerald-600' :
-                      isVerified ? 'bg-blue-50 text-blue-600' :
+                      isHodApproved ? 'bg-emerald-100 text-emerald-800' :
+                      isAwaitingHod ? 'bg-purple-50 text-purple-600' :
                       isReferred ? 'bg-amber-50 text-amber-600' :
                       'bg-red-50 text-red-600'
                     }`}>
                       {isResolved ? <CheckCircle2 className="w-5 h-5" /> :
-                       isVerified ? <FileCheck className="w-5 h-5" /> :
-                       isReferred ? <Clock className="w-5 h-5" /> :
+                       isHodApproved ? <FileCheck className="w-5 h-5 text-emerald-700" /> :
+                       isAwaitingHod ? <Clock className="w-5 h-5 text-purple-600" /> :
+                       isReferred ? <Clock className="w-5 h-5 text-amber-600" /> :
                        <AlertCircle className="w-5 h-5" />}
                     </div>
                     <div>
@@ -196,21 +200,29 @@ export default function ExamOfficerComplaintsPage() {
                   <div className="flex items-center gap-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                       isResolved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      isVerified ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                      isHodApproved ? 'bg-emerald-600 text-white shadow-xs font-extrabold' :
+                      isAwaitingHod ? 'bg-purple-50 text-purple-700 border border-purple-200' :
                       isReferred ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                       'bg-red-50 text-red-700 border border-red-200'
                     }`}>
                       {isResolved ? 'Resolved' :
-                       isVerified ? 'HOD Memo Approved' :
+                       isHodApproved ? 'HOD Sanctioned — Ready to Rectify' :
+                       isAwaitingHod ? 'Memo with HOD' :
                        isReferred ? 'Referred to Lecturer' :
                        'Pending Review'}
                     </span>
                     <button
                       onClick={() => handleOpenResponse(cmp)}
-                      className="px-3.5 py-1.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5 text-white ${
+                        isResolved ? 'bg-slate-700 hover:bg-slate-800' :
+                        isHodApproved ? 'bg-emerald-600 hover:bg-emerald-700 ring-2 ring-emerald-500/40' :
+                        'bg-primary hover:bg-blue-700'
+                      }`}
                     >
                       <FileText className="w-3.5 h-3.5" />
-                      {isResolved ? 'View Full Audit Trail' : 'Open Dispute Protocol'}
+                      {isResolved ? 'View Full Audit Trail' :
+                       isHodApproved ? 'Execute Senate Rectification' :
+                       'Open Dispute Protocol'}
                     </button>
                   </div>
                 </div>
@@ -232,21 +244,31 @@ export default function ExamOfficerComplaintsPage() {
                 <div className="mt-4 pt-3 border-t border-slate-100">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                     <div className={`p-2.5 rounded-lg border flex items-center gap-2 ${
-                      isReferred || isVerified || isResolved ? 'bg-blue-50/70 border-blue-200 text-blue-900 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      isReferred || isAwaitingHod || isHodApproved || isResolved
+                        ? 'bg-blue-50/70 border-blue-200 text-blue-900 font-semibold'
+                        : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                       <UserCheck className="w-4 h-4 text-primary shrink-0" />
                       <span>1. Referral to Lecturer</span>
                     </div>
 
                     <div className={`p-2.5 rounded-lg border flex items-center gap-2 ${
-                      isVerified || isResolved ? 'bg-blue-50/70 border-blue-200 text-blue-900 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      isHodApproved || isResolved
+                        ? 'bg-purple-50/80 border-purple-300 text-purple-900 font-semibold'
+                        : isAwaitingHod
+                        ? 'bg-amber-50 border-amber-200 text-amber-900 font-semibold'
+                        : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
-                      <FileCheck className="w-4 h-4 text-primary shrink-0" />
-                      <span>2. Lecturer Audit & Memo to HOD</span>
+                      <FileCheck className="w-4 h-4 text-purple-700 shrink-0" />
+                      <span>2. Lecturer Memo & HOD Sanction</span>
                     </div>
 
                     <div className={`p-2.5 rounded-lg border flex items-center gap-2 ${
-                      isResolved ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      isResolved
+                        ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 font-semibold'
+                        : isHodApproved
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-bold'
+                        : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>3. Final Senate Resolution</span>
