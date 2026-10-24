@@ -95,7 +95,7 @@ export default function HodDashboardPage() {
   // Filter courses by status
   const pendingApprovalCourses = deptCourses.filter(c => {
     const results = finalResults.filter(f => f.course_id === c.id)
-    return results.length > 0 && results.some(r => r.status === 'draft')
+    return results.length > 0 && results.some(r => r.status === 'submitted' || r.status === 'draft')
   })
 
   const approvedCourses = deptCourses.filter(c => {
