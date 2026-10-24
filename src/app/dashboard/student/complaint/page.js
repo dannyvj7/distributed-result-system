@@ -163,12 +163,14 @@ export default function StudentComplaintPage() {
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
                       isResolved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      c.status === 'lecturer_verified' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                      c.status === 'hod_approved' ? 'bg-emerald-50 text-emerald-800 border border-emerald-300' :
+                      c.status === 'awaiting_hod_approval' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
                       c.status === 'referred_to_lecturer' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                       'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}>
                       {isResolved ? 'Resolved' :
-                       c.status === 'lecturer_verified' ? 'HOD Memo Approved' :
+                       c.status === 'hod_approved' ? 'HOD Approved' :
+                       c.status === 'awaiting_hod_approval' ? 'Memo With HOD' :
                        c.status === 'referred_to_lecturer' ? 'With Lecturer' :
                        'Pending Review'}
                     </span>
@@ -202,14 +204,24 @@ export default function StudentComplaintPage() {
                         </span>
                       )}
                     </div>
-                  ) : c.status === 'lecturer_verified' ? (
+                  ) : c.status === 'hod_approved' ? (
+                    <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl text-xs text-emerald-950 space-y-1">
+                      <div className="flex items-center gap-2 font-bold text-emerald-800">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>HOD Executive Sanction Granted</span>
+                      </div>
+                      <p className="text-emerald-900">
+                        HOD Dr. (Mrs.) Ifeoma Nwokoye approved broadsheet withdrawal and score adjustment under Memo <strong className="font-mono">{c.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong>. The Examinations Office is finalizing the Senate records update.
+                      </p>
+                    </div>
+                  ) : c.status === 'awaiting_hod_approval' ? (
                     <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900 space-y-1">
                       <div className="flex items-center gap-2 font-bold">
                         <CheckCircle className="w-4 h-4 text-purple-600 shrink-0" />
-                        <span>Lecturer Audit Completed & Approved by HOD</span>
+                        <span>Lecturer Physical Script Audit Completed</span>
                       </div>
                       <p className="text-purple-800">
-                        The course lecturer verified your test script and submitted formal memorandum {c.hod_memo_ref || 'UNN/CSC/REC/2026/014'} to the Head of Department. Awaiting final Senate record update by the Exam Officer.
+                        The course lecturer verified your test script and submitted formal memorandum <strong className="font-mono">{c.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong> to the Head of Department. Awaiting HOD executive sign-off.
                       </p>
                     </div>
                   ) : c.status === 'referred_to_lecturer' ? (

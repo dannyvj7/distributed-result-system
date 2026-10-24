@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '../../../components/DashboardLayout'
 import { useAuth } from '../../../lib/authContext'
-import { getCourses, getFinalResults, getResultDistributions, getDepartments, getHodProfile } from '../../../lib/db'
+import { getCourses, getFinalResults, getResultDistributions, getDepartments, getHodProfile, getComplaints, hodApproveWithdrawal, getStudents } from '../../../lib/db'
 import {
   BookOpen,
   Send,
@@ -15,7 +15,10 @@ import {
   ArrowRight,
   ShieldCheck,
   FileCheck,
-  Building2
+  Building2,
+  AlertCircle,
+  FileText,
+  X
 } from 'lucide-react'
 
 export default function HodDashboardPage() {
@@ -25,30 +28,62 @@ export default function HodDashboardPage() {
   const [finalResults, setFinalResults] = useState([])
   const [distributions, setDistributions] = useState([])
   const [hodProfile, setHodProfile] = useState(null)
+  const [complaints, setComplaints] = useState([])
+  const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
+  const [statusMessage, setStatusMessage] = useState(null)
+
+  // HOD Approval Modal State
+  const [activeRectification, setActiveRectification] = useState(null)
+  const [hodNotes, setHodNotes] = useState('Executive approval granted to withdraw broadsheet line item and sanction the requested Continuous Assessment adjustment based on lecturer script audit.')
+  const [approving, setApproving] = useState(false)
+
+  const loadData = async () => {
+    try {
+      const [allCourses, allDepts, allFinals, allDists, profile, allComplaints, allStudents] = await Promise.all([
+        getCourses(),
+        getDepartments(),
+        getFinalResults(),
+        getResultDistributions(),
+        getHodProfile(user?.id),
+        getComplaints(),
+        getStudents()
+      ])
+
+      setCourses(allCourses)
+      setDepartments(allDepts)
+      setFinalResults(allFinals)
+      setDistributions(allDists)
+      setHodProfile(profile)
+      setComplaints(allComplaints)
+      setStudents(allStudents)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const [allCourses, allDepts, allFinals, allDists, profile] = await Promise.all([
-          getCourses(),
-          getDepartments(),
-          getFinalResults(),
-          getResultDistributions(),
-          getHodProfile(user?.id)
-        ])
-
-        setCourses(allCourses)
-        setDepartments(allDepts)
-        setFinalResults(allFinals)
-        setDistributions(allDists)
-        setHodProfile(profile)
-      } finally {
-        setLoading(false)
-      }
-    }
     loadData()
   }, [user])
+
+  const handleApproveRectification = async () => {
+    if (!activeRectification) return
+    setApproving(true)
+    try {
+      const hodSigName = hodProfile?.full_name || user?.full_name || 'Dr. (Mrs.) Ifeoma Nwokoye'
+      await hodApproveWithdrawal(activeRectification.id, hodNotes, hodSigName)
+      setStatusMessage({
+        type: 'success',
+        text: `Broadsheet withdrawal and score adjustment formally sanctioned under Memo ${activeRectification.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Dispatched to Examinations Office for Senate record update.`
+      })
+      setActiveRectification(null)
+      await loadData()
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Failed to approve rectification.' })
+    } finally {
+      setApproving(false)
+    }
+  }
 
   const myDeptId = user?.department_id || departments[0]?.id
   const myDept = departments.find(d => d.id === myDeptId)
@@ -163,6 +198,69 @@ export default function HodDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Broadsheet Withdrawal & Rectification Requests */}
+      {complaints.filter(c => c.status === 'awaiting_hod_approval').length > 0 && (
+        <div className="bg-white rounded-xl border border-purple-200 shadow-xs overflow-hidden mb-8">
+          <div className="p-5 border-b border-purple-100 bg-purple-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center shrink-0">
+                <FileCheck className="w-5 h-5 text-purple-700" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Result Rectification & Broadsheet Withdrawal Requests</h3>
+                <p className="text-xs text-slate-500">
+                  Course lecturers requesting formal HOD sanction to withdraw and amend broadsheet line items
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 self-start sm:self-auto">
+              Awaiting HOD Signature
+            </span>
+          </div>
+
+          <div className="p-5 divide-y divide-slate-100">
+            {complaints.filter(c => c.status === 'awaiting_hod_approval').map(cmp => {
+              const student = students.find(s => s.id === cmp.student_id)
+              const course = courses.find(c => c.id === cmp.course_id)
+
+              return (
+                <div key={cmp.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">{student?.full_name || 'Candidate'}</span>
+                      <span className="font-mono text-xs font-semibold text-primary bg-blue-50 px-2 py-0.5 rounded">
+                        {student?.reg_number}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-600">
+                        &bull; Course: <strong className="text-slate-900">{course?.code || 'COS 101'}</strong>
+                      </span>
+                    </div>
+                    <p className="text-xs text-purple-950 mt-1.5 bg-purple-50/70 p-2.5 rounded-lg border border-purple-100 font-medium leading-relaxed">
+                      <span className="font-bold text-purple-900 block text-[10px] uppercase">Lecturer Written Memorandum:</span>
+                      "{cmp.lecturer_findings}"
+                    </p>
+                    <div className="flex items-center gap-4 mt-1 text-[11px] text-slate-500">
+                      <span>Requested Correction: <strong className="text-emerald-700">{cmp.requested_adjustment || '+4 marks'}</strong></span>
+                      <span>Memo Ref: <strong className="font-mono text-slate-700">{cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong></span>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0">
+                    <button
+                      onClick={() => setActiveRectification(cmp)}
+                      className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-900/20 transition flex items-center gap-1.5"
+                    >
+                      <PenTool className="w-3.5 h-3.5" />
+                      Review & Sanction Withdrawal
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Quick Action Navigation Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
@@ -289,6 +387,107 @@ export default function HodDashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* HOD Broadsheet Withdrawal Sanction Modal */}
+      {activeRectification && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full my-8 p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Broadsheet Withdrawal Authorization</h3>
+                  <p className="text-xs text-slate-500">Departmental Board of Examiners &bull; Official HOD Sanction</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveRectification(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="my-4 p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate:</span>
+                <span className="font-bold text-slate-800">
+                  {students.find(s => s.id === activeRectification.student_id)?.full_name} ({students.find(s => s.id === activeRectification.student_id)?.reg_number})
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Course & Dept:</span>
+                <span className="font-semibold text-slate-800">
+                  {courses.find(c => c.id === activeRectification.course_id)?.code} &bull; Computer Science
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Lecturer Memo Ref:</span>
+                <span className="font-mono font-bold text-purple-700">
+                  {activeRectification.hod_memo_ref || 'UNN/CSC/REC/2026/014'}
+                </span>
+              </div>
+              <div className="pt-2 border-t border-slate-200 text-slate-700 italic">
+                Lecturer Finding: "{activeRectification.lecturer_findings}"
+              </div>
+            </div>
+
+            {/* Statutory Statement */}
+            <div className="bg-purple-50/70 border border-purple-200 rounded-xl p-4 my-4 text-xs text-purple-950 leading-relaxed">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-purple-900 mb-1">
+                <ShieldCheck className="w-4 h-4 text-purple-700" /> Executive Board Sanction
+              </div>
+              <p>
+                As Head of Department and Chairman of the Departmental Board of Examiners, I hereby grant executive approval to withdraw and amend the broadsheet line item for this candidate based on the course lecturer's physical script audit. The Examinations Officer is hereby authorized to synchronize this adjustment with Senate records.
+              </p>
+            </div>
+
+            {/* HOD Signature Box */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 my-4 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  HOD Endorsement & Signature
+                </span>
+                <div className="font-serif italic text-2xl font-bold text-primary tracking-wide mt-1 select-none">
+                  {hodProfile?.full_name || user?.full_name || 'Dr. (Mrs.) Ifeoma Nwokoye'}
+                </div>
+                <span className="text-[11px] text-slate-500 font-medium block mt-0.5">
+                  Associate Professor & Head of Department
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                  <CheckCircle2 className="w-3 h-3" /> Board Authorized
+                </span>
+                <div className="text-xs text-slate-600 font-mono mt-1">
+                  {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveRectification(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={approving}
+                onClick={handleApproveRectification}
+                className="px-5 py-2 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-xl shadow-md shadow-purple-900/20 transition flex items-center gap-1.5"
+              >
+                <PenTool className="w-3.5 h-3.5" />
+                {approving ? 'Sanctioning...' : 'Affix HOD Signature & Authorize Withdrawal'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }

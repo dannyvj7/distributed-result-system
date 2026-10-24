@@ -1131,15 +1131,46 @@ export async function referComplaintToLecturer(complaintId, referralNote) {
   return null
 }
 
-export async function submitLecturerRectification(complaintId, lecturerFindings, memoRef = 'UNN/CSC/REC/2026/014') {
+export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = '+4 marks (CA 21 -> 25)', memoRef = 'UNN/CSC/REC/2026/014') {
   const local = getLocalData()
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
-    local.complaints[idx].status = 'lecturer_verified'
-    local.complaints[idx].lecturer_findings = lecturerFindings ? lecturerFindings.trim() : 'Physical script retrieved and audited. Continuous assessment error confirmed. Official written memo dispatched to HOD requesting result amendment.'
+    local.complaints[idx].status = 'awaiting_hod_approval'
+    local.complaints[idx].lecturer_findings = findings ? findings.trim() : 'Physical CA test script audited. Test 2 score was 14/15 instead of 10 recorded due to transcription error.'
+    local.complaints[idx].requested_adjustment = requestedAdjustment
     local.complaints[idx].hod_memo_ref = memoRef
-    local.complaints[idx].hod_approved_withdrawal = true
-    local.complaints[idx].lecturer_verified_at = new Date().toISOString()
+    local.complaints[idx].lecturer_memo_date = new Date().toISOString()
+    saveLocalData(local)
+    return local.complaints[idx]
+  }
+  return null
+}
+
+export async function hodApproveWithdrawal(complaintId, hodNotes = 'Approved for broadsheet line item withdrawal and correction.', hodSignature = 'Dr. (Mrs.) Ifeoma Nwokoye') {
+  const local = getLocalData()
+  const idx = local.complaints.findIndex(c => c.id === complaintId)
+  if (idx >= 0) {
+    local.complaints[idx].status = 'hod_approved'
+    local.complaints[idx].hod_notes = hodNotes
+    local.complaints[idx].hod_signature = hodSignature
+    local.complaints[idx].hod_approved_at = new Date().toISOString()
+    saveLocalData(local)
+    return local.complaints[idx]
+  }
+  return null
+}
+
+export async function submitLecturerRectification(complaintId, lecturerFindings, memoRef = 'UNN/CSC/REC/2026/014') {
+  return lecturerSubmitMemoToHOD(complaintId, lecturerFindings, '+4 marks (CA 21 -> 25)', memoRef)
+}
+
+export async function examOfficerFinalizeRectification(complaintId, finalResponse) {
+  const local = getLocalData()
+  const idx = local.complaints.findIndex(c => c.id === complaintId)
+  if (idx >= 0) {
+    local.complaints[idx].status = 'resolved'
+    local.complaints[idx].exam_officer_response = finalResponse.trim()
+    local.complaints[idx].resolved_at = new Date().toISOString()
     saveLocalData(local)
     return local.complaints[idx]
   }
@@ -1147,16 +1178,7 @@ export async function submitLecturerRectification(complaintId, lecturerFindings,
 }
 
 export async function resolveComplaint(complaintId, responseText) {
-  const local = getLocalData()
-  const idx = local.complaints.findIndex(c => c.id === complaintId)
-  if (idx >= 0) {
-    local.complaints[idx].status = 'resolved'
-    local.complaints[idx].exam_officer_response = responseText.trim()
-    local.complaints[idx].resolved_at = new Date().toISOString()
-    saveLocalData(local)
-    return local.complaints[idx]
-  }
-  return null
+  return examOfficerFinalizeRectification(complaintId, responseText)
 }
 
 // ----------------- DEFENSE LIVE DEMO CONTROLS -----------------

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
-import { getComplaints, resolveComplaint, referComplaintToLecturer, submitLecturerRectification, getStudents, getCourses } from '../../../../lib/db'
-import { AlertCircle, CheckCircle2, MessageSquare, Send, CheckCircle, Clock, ArrowRight, FileCheck, ShieldCheck, UserCheck, FileText } from 'lucide-react'
+import { getComplaints, resolveComplaint, referComplaintToLecturer, getStudents, getCourses } from '../../../../lib/db'
+import { AlertCircle, CheckCircle2, MessageSquare, Send, CheckCircle, Clock, ArrowRight, FileCheck, ShieldCheck, UserCheck, FileText, X } from 'lucide-react'
 
 export default function ExamOfficerComplaintsPage() {
   const [complaints, setComplaints] = useState([])
@@ -15,9 +15,6 @@ export default function ExamOfficerComplaintsPage() {
   // Response / Protocol Modal State
   const [activeComplaint, setActiveComplaint] = useState(null)
   const [referralNote, setReferralNote] = useState('Kindly retrieve candidate\'s physical Continuous Assessment scripts and verify against submitted score roster.')
-  const [lecturerNotes, setLecturerNotes] = useState('Physical CA test script audited. Test 2 score was 14/15 instead of 10 recorded due to transcription error. Recommending score adjustment: +4 marks.')
-  const [hodMemoRef, setHodMemoRef] = useState('UNN/CSC/REC/2026/014')
-  const [hodApproved, setHodApproved] = useState(true)
   const [responseText, setResponseText] = useState('')
   const [resolving, setResolving] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
@@ -45,10 +42,7 @@ export default function ExamOfficerComplaintsPage() {
   const handleOpenResponse = (cmp) => {
     setActiveComplaint(cmp)
     setReferralNote(cmp.referral_note || 'Kindly retrieve candidate\'s physical Continuous Assessment scripts and verify against submitted score roster.')
-    setLecturerNotes(cmp.lecturer_findings || 'Physical CA test script audited. Test 2 score was 14/15 instead of 10 recorded due to transcription error. Recommending score adjustment: +4 marks.')
-    setHodMemoRef(cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014')
-    setHodApproved(cmp.hod_approved_withdrawal !== false)
-    setResponseText(cmp.exam_officer_response || 'Script retrieved from departmental archive and verified with Course Lecturer. Written application to HOD approved (Ref: UNN/CSC/REC/2026/014) to withdraw and amend broadsheet. Candidate score corrected from 65 to 69 in final records.')
+    setResponseText(cmp.exam_officer_response || `Physical script audit confirmed by Course Lecturer. Result withdrawal and amendment approved by HOD under Memo ${cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Candidate's Continuous Assessment score adjusted (+4 marks). Senate master records updated.`)
   }
 
   // Action 1: Forward to Lecturer
@@ -62,7 +56,6 @@ export default function ExamOfficerComplaintsPage() {
         text: 'Dispute officially forwarded to the Course Lecturer for physical script and CA audit.'
       })
       await loadData()
-      // Update local active
       setActiveComplaint(prev => ({ ...prev, status: 'referred_to_lecturer', referral_note: referralNote }))
     } catch (err) {
       setStatusMessage({ type: 'error', text: 'Failed to refer complaint to lecturer.' })
@@ -71,32 +64,7 @@ export default function ExamOfficerComplaintsPage() {
     }
   }
 
-  // Action 2: Lecturer Confirms & Writes to HOD
-  const handleSubmitLecturerNote = async () => {
-    if (!activeComplaint) return
-    setResolving(true)
-    try {
-      await submitLecturerRectification(activeComplaint.id, lecturerNotes, hodMemoRef)
-      setStatusMessage({
-        type: 'success',
-        text: `Lecturer verification recorded. Formal Memo ${hodMemoRef} approved by HOD to withdraw and rectify broadsheet.`
-      })
-      await loadData()
-      setActiveComplaint(prev => ({
-        ...prev,
-        status: 'lecturer_verified',
-        lecturer_findings: lecturerNotes,
-        hod_memo_ref: hodMemoRef,
-        hod_approved_withdrawal: true
-      }))
-    } catch (err) {
-      setStatusMessage({ type: 'error', text: 'Failed to record lecturer rectification note.' })
-    } finally {
-      setResolving(false)
-    }
-  }
-
-  // Action 3: Final Senate Score Rectification
+  // Action 2: Final Senate Score Rectification (Enabled only after HOD approves)
   const handleFinalResolve = async (e) => {
     if (e) e.preventDefault()
     if (!activeComplaint || !responseText.trim()) return
@@ -109,7 +77,7 @@ export default function ExamOfficerComplaintsPage() {
         text: 'Result dispute formally resolved under HOD sanction. Final records updated and student notified.'
       })
       setActiveComplaint(null)
-      loadData()
+      await loadData()
     } catch (err) {
       setStatusMessage({ type: 'error', text: 'Failed to complete dispute resolution.' })
     } finally {
@@ -374,74 +342,80 @@ export default function ExamOfficerComplaintsPage() {
               )}
             </div>
 
-            {/* Step 2: Lecturer Written Audit & HOD Withdrawal Memo */}
+            {/* Step 2: Departmental Investigation & HOD Authorization Status */}
             <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-white">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-bold">2</span>
-                  Lecturer Physical Audit & Formal Memo to HOD
+                  Departmental Script Audit & HOD Authorization
                 </h4>
-                {(activeComplaint.status === 'lecturer_verified' || activeComplaint.status === 'resolved') && (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    HOD Approved
-                  </span>
-                )}
-              </div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Lecturer Script Verification Finding:
-              </label>
-              <textarea
-                rows={2}
-                disabled={activeComplaint.status === 'resolved'}
-                value={lecturerNotes}
-                onChange={(e) => setLecturerNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-primary focus:outline-none mb-2 disabled:bg-slate-50 disabled:text-slate-600"
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
-                    Departmental Memo Reference:
-                  </label>
-                  <input
-                    type="text"
-                    disabled={activeComplaint.status === 'resolved'}
-                    value={hodMemoRef}
-                    onChange={(e) => setHodMemoRef(e.target.value)}
-                    className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-primary focus:outline-none disabled:bg-slate-50"
-                  />
-                </div>
-                <div className="flex items-center pt-4">
-                  <label className="flex items-center gap-2 text-xs text-slate-700 font-medium">
-                    <input
-                      type="checkbox"
-                      checked={hodApproved}
-                      disabled={activeComplaint.status === 'resolved'}
-                      onChange={(e) => setHodApproved(e.target.checked)}
-                      className="rounded text-primary focus:ring-primary"
-                    />
-                    <span>Approved by HOD Dr. (Mrs.) Ifeoma Nwokoye</span>
-                  </label>
-                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  activeComplaint.status === 'hod_approved' || activeComplaint.status === 'resolved'
+                    ? 'text-emerald-700 bg-emerald-50'
+                    : activeComplaint.status === 'awaiting_hod_approval'
+                    ? 'text-purple-700 bg-purple-50'
+                    : activeComplaint.status === 'referred_to_lecturer'
+                    ? 'text-amber-700 bg-amber-50'
+                    : 'text-slate-400 bg-slate-100'
+                }`}>
+                  {activeComplaint.status === 'hod_approved' || activeComplaint.status === 'resolved'
+                    ? 'HOD Sanctioned'
+                    : activeComplaint.status === 'awaiting_hod_approval'
+                    ? 'Memo with HOD'
+                    : activeComplaint.status === 'referred_to_lecturer'
+                    ? 'At Lecturer Desk'
+                    : 'Pending Dispatch'}
+                </span>
               </div>
 
-              {activeComplaint.status === 'referred_to_lecturer' && (
-                <div className="mt-2 flex justify-end">
-                  <button
-                    onClick={handleSubmitLecturerNote}
-                    disabled={resolving || !hodApproved}
-                    className="px-4 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"
-                  >
-                    <FileCheck className="w-3.5 h-3.5" />
-                    Record Lecturer Audit & HOD Memo
-                  </button>
+              {activeComplaint.status === 'pending' ? (
+                <p className="text-xs text-slate-500 italic p-2 bg-slate-50 rounded-lg">
+                  Referral has not been dispatched yet. Click "Dispatch to Lecturer Desk" in Step 1 to initiate physical script audit.
+                </p>
+              ) : activeComplaint.status === 'referred_to_lecturer' ? (
+                <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                  <div className="flex items-center gap-2 font-bold">
+                    <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Dispatched to Course Lecturer (Dr. Aminu Ibrahim)</span>
+                  </div>
+                  <p className="text-amber-800">
+                    The lecturer must retrieve physical continuous assessment scripts, audit scores, and submit a formal memorandum to the HOD.
+                  </p>
+                </div>
+              ) : activeComplaint.status === 'awaiting_hod_approval' ? (
+                <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl text-xs text-purple-900 space-y-1">
+                  <div className="flex items-center gap-2 font-bold">
+                    <Clock className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Lecturer Audit Completed & Dispatched to HOD</span>
+                  </div>
+                  <p className="text-purple-800">
+                    Lecturer confirmed: "{activeComplaint.lecturer_findings || 'Discrepancy confirmed'}". Memo Ref: <strong className="font-mono">{activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong>. Awaiting executive signature from HOD Dr. (Mrs.) Ifeoma Nwokoye.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-950 space-y-1.5">
+                  <div className="flex items-center gap-2 font-bold text-emerald-800">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Executive Sanction Granted by HOD</span>
+                  </div>
+                  <p className="text-emerald-900">
+                    HOD Dr. (Mrs.) Ifeoma Nwokoye has formally approved broadsheet withdrawal and score adjustment under Memo <strong className="font-mono">{activeComplaint.hod_memo_ref || 'UNN/CSC/REC/2026/014'}</strong>.
+                  </p>
+                  <div className="text-[11px] text-emerald-700 font-mono">
+                    Adjustment: {activeComplaint.requested_adjustment || '+4 marks'} &bull; Digital Signature Verified
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Step 3: Final Senate Score Rectification */}
-            <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-emerald-50/40">
+            <div className={`border rounded-xl p-4 mb-4 ${
+              activeComplaint.status === 'hod_approved' || activeComplaint.status === 'resolved'
+                ? 'border-emerald-200 bg-emerald-50/40'
+                : 'border-slate-200 bg-slate-50 opacity-60'
+            }`}>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold">3</span>
                   Final Senate Score Rectification & Student Notice
                 </h4>
@@ -453,12 +427,17 @@ export default function ExamOfficerComplaintsPage() {
               </div>
               <textarea
                 rows={3}
-                disabled={activeComplaint.status === 'resolved'}
+                disabled={activeComplaint.status !== 'hod_approved'}
                 value={responseText}
                 onChange={(e) => setResponseText(e.target.value)}
                 placeholder="Final Examination Office resolution text to be displayed on student result statement..."
-                className="w-full px-3 py-2 text-xs border border-emerald-300 rounded-lg focus:ring-emerald-600 focus:outline-none disabled:bg-white"
+                className="w-full px-3 py-2 text-xs border border-emerald-300 rounded-lg focus:ring-emerald-600 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
               />
+              {activeComplaint.status !== 'hod_approved' && activeComplaint.status !== 'resolved' && (
+                <p className="text-[11px] text-slate-500 mt-1 italic">
+                  * Senate score rectification is locked until the Head of Department approves the broadsheet withdrawal.
+                </p>
+              )}
             </div>
 
             {/* Modal Controls */}
@@ -470,7 +449,7 @@ export default function ExamOfficerComplaintsPage() {
               >
                 Close
               </button>
-              {activeComplaint.status !== 'resolved' && (
+              {activeComplaint.status === 'hod_approved' && (
                 <button
                   type="button"
                   disabled={resolving || !responseText.trim()}
@@ -478,7 +457,7 @@ export default function ExamOfficerComplaintsPage() {
                   className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-md shadow-emerald-600/20 transition flex items-center gap-2 disabled:opacity-50"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  {resolving ? 'Updating Records...' : 'Execute Rectification & Resolve Dispute'}
+                  {resolving ? 'Updating Records...' : 'Execute Senate Rectification & Resolve Dispute'}
                 </button>
               )}
             </div>

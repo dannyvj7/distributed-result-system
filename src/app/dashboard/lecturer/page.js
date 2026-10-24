@@ -4,10 +4,10 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '../../../components/DashboardLayout'
 import { useAuth } from '../../../lib/authContext'
-import { getCourses, getEnrollments, getExamScores, getCaScores, getFinalResults, submitResultsToHOD, getStudents } from '../../../lib/db'
+import { getCourses, getEnrollments, getExamScores, getCaScores, getFinalResults, submitResultsToHOD, getStudents, getComplaints, lecturerSubmitMemoToHOD } from '../../../lib/db'
 import {
   BookOpen, Upload, FileCheck, ArrowRight, CheckCircle2, Clock,
-  AlertCircle, Send, Lock, CheckCircle, BookMarked, PenTool, ShieldCheck, X, FileText
+  AlertCircle, Send, Lock, CheckCircle, BookMarked, PenTool, ShieldCheck, X, FileText, UserCheck, MessageSquare
 } from 'lucide-react'
 
 export default function LecturerDashboardPage() {
@@ -18,6 +18,7 @@ export default function LecturerDashboardPage() {
   const [examScores, setExamScores] = useState([])
   const [caScores, setCaScores] = useState([])
   const [finalResults, setFinalResults] = useState([])
+  const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(null) // courseId currently being submitted
   const [statusMessage, setStatusMessage] = useState(null)
@@ -26,15 +27,23 @@ export default function LecturerDashboardPage() {
   const [signingCourse, setSigningCourse] = useState(null)
   const [hasConfirmedAttestation, setHasConfirmedAttestation] = useState(false)
 
+  // Script Audit Modal State
+  const [activeAuditComplaint, setActiveAuditComplaint] = useState(null)
+  const [auditFindings, setAuditFindings] = useState('Physical CA test script audited. Discrepancy confirmed on Test 2: candidate scored 14/15 instead of 10/15 recorded. Verified adjustment: +4 marks.')
+  const [auditMemoRef, setAuditMemoRef] = useState('UNN/CSC/REC/2026/014')
+  const [auditAdjustment, setAuditAdjustment] = useState('+4 marks (CA 21 -> 25)')
+  const [submittingAudit, setSubmittingAudit] = useState(false)
+
   const loadData = async () => {
     try {
-      const [allCourses, allEnrolls, allExams, allCas, allFinals, allStudents] = await Promise.all([
+      const [allCourses, allEnrolls, allExams, allCas, allFinals, allStudents, allComplaints] = await Promise.all([
         getCourses(),
         getEnrollments(),
         getExamScores(),
         getCaScores(),
         getFinalResults(),
-        getStudents()
+        getStudents(),
+        getComplaints()
       ])
 
       // Strictly filter courses allocated to this specific lecturer
@@ -50,6 +59,7 @@ export default function LecturerDashboardPage() {
       setCaScores(allCas)
       setFinalResults(allFinals)
       setStudents(allStudents)
+      setComplaints(allComplaints)
     } finally {
       setLoading(false)
     }
@@ -62,6 +72,32 @@ export default function LecturerDashboardPage() {
   const handleOpenSignModal = (course) => {
     setSigningCourse(course)
     setHasConfirmedAttestation(false)
+  }
+
+  const handleOpenAuditModal = (cmp) => {
+    setActiveAuditComplaint(cmp)
+    setAuditFindings('Physical CA test script audited. Discrepancy confirmed on Test 2: candidate scored 14/15 instead of 10/15 recorded. Verified adjustment: +4 marks.')
+    setAuditMemoRef('UNN/CSC/REC/2026/014')
+    setAuditAdjustment('+4 marks (CA 21 -> 25)')
+  }
+
+  const handleSubmitAuditMemo = async (e) => {
+    e.preventDefault()
+    if (!activeAuditComplaint) return
+    setSubmittingAudit(true)
+    try {
+      await lecturerSubmitMemoToHOD(activeAuditComplaint.id, auditFindings, auditAdjustment, auditMemoRef)
+      setStatusMessage({
+        type: 'success',
+        text: `Official Memorandum (${auditMemoRef}) requesting result withdrawal and rectification has been dispatched to HOD Dr. (Mrs.) Ifeoma Nwokoye.`
+      })
+      setActiveAuditComplaint(null)
+      await loadData()
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Failed to submit memorandum to HOD.' })
+    } finally {
+      setSubmittingAudit(false)
+    }
   }
 
   const handleConfirmSignAndSubmit = async () => {
@@ -163,6 +199,94 @@ export default function LecturerDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Dispute Referrals & Physical Script Audit Desk */}
+      {complaints.filter(c => ['referred_to_lecturer', 'awaiting_hod_approval', 'hod_approved'].includes(c.status)).length > 0 && (
+        <div className="bg-white rounded-xl border border-amber-200 shadow-xs overflow-hidden mb-8">
+          <div className="p-5 border-b border-amber-100 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                <FileCheck className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Dispute Referrals & Physical Script Audit Desk</h3>
+                <p className="text-xs text-slate-500">
+                  Student score discrepancy inquiries referred by Examinations Office for physical script verification
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 self-start sm:self-auto">
+              Action Required
+            </span>
+          </div>
+
+          <div className="p-5 divide-y divide-slate-100">
+            {complaints.filter(c => ['referred_to_lecturer', 'awaiting_hod_approval', 'hod_approved'].includes(c.status)).map(cmp => {
+              const student = students.find(s => s.id === cmp.student_id)
+              const course = courses.find(c => c.id === cmp.course_id)
+              const isReferred = cmp.status === 'referred_to_lecturer'
+              const isAwaitingHod = cmp.status === 'awaiting_hod_approval'
+              const isHodApproved = cmp.status === 'hod_approved'
+
+              return (
+                <div key={cmp.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900">{student?.full_name || 'Candidate'}</span>
+                      <span className="font-mono text-xs font-semibold text-primary bg-blue-50 px-2 py-0.5 rounded">
+                        {student?.reg_number}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-600">
+                        &bull; Course: <strong className="text-slate-900">{course?.code || 'COS 101'}</strong>
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-700 mt-1.5 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      <span className="font-semibold text-slate-500 block text-[10px] uppercase">Candidate Claim:</span>
+                      "{cmp.complaint_text}"
+                    </p>
+                    {cmp.referral_note && (
+                      <p className="text-xs text-blue-900 mt-1 bg-blue-50/60 p-2 rounded-lg border border-blue-100 font-medium">
+                        <span className="font-semibold text-blue-700 block text-[10px] uppercase">Exam Officer Directive:</span>
+                        "{cmp.referral_note}"
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    {isReferred ? (
+                      <button
+                        onClick={() => handleOpenAuditModal(cmp)}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/20 transition flex items-center gap-1.5"
+                      >
+                        <PenTool className="w-3.5 h-3.5" />
+                        Audit Script & Memo HOD
+                      </button>
+                    ) : isAwaitingHod ? (
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                          <Clock className="w-3 h-3" /> Memo Submitted to HOD
+                        </span>
+                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                          Ref: {cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3" /> HOD Sanctioned
+                        </span>
+                        <div className="text-[10px] text-emerald-600 font-medium mt-0.5">
+                          Ready for Senate update
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Course Workflow Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -501,6 +625,107 @@ export default function LecturerDashboardPage() {
                 {submitting === signingCourse.id ? 'Submitting to HOD...' : 'Affix Digital Signature & Submit to HOD'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lecturer Script Audit & HOD Memo Modal */}
+      {activeAuditComplaint && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full my-8 p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Physical Script Audit & Memo to HOD</h3>
+                  <p className="text-xs text-slate-500">Formally request broadsheet withdrawal under academic regulations</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveAuditComplaint(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="my-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+              <p className="font-semibold text-slate-800">
+                Candidate: {students.find(s => s.id === activeAuditComplaint.student_id)?.full_name} ({students.find(s => s.id === activeAuditComplaint.student_id)?.reg_number})
+              </p>
+              <p className="text-slate-500 mt-0.5 italic">
+                Student Claim: "{activeAuditComplaint.complaint_text}"
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmitAuditMemo} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Physical Script Audit Findings
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={auditFindings}
+                  onChange={(e) => setAuditFindings(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Verified Score Adjustment
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={auditAdjustment}
+                    onChange={(e) => setAuditAdjustment(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-emerald-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Official Memo Reference Number
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={auditMemoRef}
+                    onChange={(e) => setAuditMemoRef(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
+                <p className="font-semibold mb-1 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-700" /> Formal Notice to Head of Department:
+                </p>
+                "I, {user?.full_name || 'Dr. Aminu Ibrahim'}, hereby certify that upon auditing the physical test booklets, a transcription error occurred. I formally request the HOD Dr. (Mrs.) Ifeoma Nwokoye to grant administrative approval to withdraw this broadsheet line item and sanction the score adjustment."
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setActiveAuditComplaint(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingAudit}
+                  className="px-5 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-md shadow-amber-600/20 transition flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {submittingAudit ? 'Dispatching...' : 'Sign & Dispatch Memo to HOD'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
