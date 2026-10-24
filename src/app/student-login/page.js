@@ -27,8 +27,8 @@ export default function StudentLoginPage() {
     }
   }
 
-  const fillDemoStudent = () => {
-    setRegNumber('2022/234567')
+  const fillDemoStudent = (reg = '2022/234567') => {
+    setRegNumber(reg)
     setPassword('student123')
   }
 
@@ -97,13 +97,35 @@ export default function StudentLoginPage() {
 
           {/* Quick Demo Student Autofill */}
           <div className="mt-6 pt-5 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={fillDemoStudent}
-              className="w-full py-2 px-3 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition text-center"
-            >
-              Auto-fill Demo Student (2022/234567)
-            </button>
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2 text-center">
+              Quick Demo Student Logins
+            </p>
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                onClick={() => fillDemoStudent('2022/234567')}
+                className="w-full py-2 px-3 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition flex items-center justify-between"
+              >
+                <span>Chukwuebuka Obi (400L)</span>
+                <span className="font-mono text-[11px] text-emerald-700">2022/234567</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoStudent('2024/200001')}
+                className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition flex items-center justify-between"
+              >
+                <span>Ikenna Okafor (200L)</span>
+                <span className="font-mono text-[11px] text-slate-600">2024/200001</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fillDemoStudent('2025/100001')}
+                className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition flex items-center justify-between"
+              >
+                <span>Adaeze Nwosu (100L)</span>
+                <span className="font-mono text-[11px] text-slate-600">2025/100001</span>
+              </button>
+            </div>
           </div>
 
           {/* Back to Staff Login */}

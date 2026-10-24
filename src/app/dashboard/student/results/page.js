@@ -5,6 +5,7 @@ import Link from 'next/link'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
 import { getStudents, getCourses, getFinalResults, getDepartments } from '../../../../lib/db'
+import { normalizeRegNumber } from '../../../../lib/grading'
 import { BookOpen, Printer, MessageSquarePlus, CheckCircle2, Award } from 'lucide-react'
 
 export default function StudentResultsPage() {
@@ -27,7 +28,7 @@ export default function StudentResultsPage() {
         ])
 
         const activeStudent = studs.find(
-          s => s.id === user?.id || s.reg_number === user?.reg_number || s.reg_number === '2022/234567'
+          s => s.id === user?.id || (user?.reg_number && normalizeRegNumber(s.reg_number) === normalizeRegNumber(user.reg_number))
         ) || studs[0]
 
         setStudent(activeStudent)

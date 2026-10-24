@@ -32,6 +32,7 @@ export default function LecturerDashboardPage() {
   const [auditFindings, setAuditFindings] = useState('')
   const [auditMemoRef, setAuditMemoRef] = useState('UNN/CSC/REC/2026/014')
   const [auditAdjustment, setAuditAdjustment] = useState('')
+  const [auditNewCaScore, setAuditNewCaScore] = useState('')
   const [submittingAudit, setSubmittingAudit] = useState(false)
 
   const loadData = async () => {
@@ -88,19 +89,25 @@ export default function LecturerDashboardPage() {
   const handleOpenAuditModal = (cmp) => {
     setActiveAuditComplaint(cmp)
     setAuditFindings('')
-    setAuditAdjustment('')
     setAuditMemoRef('UNN/CSC/REC/2026/014')
+    const current = caScores.find(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)?.ca_score
+      || finalResults.find(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)?.ca_score
+      || 20
+    const suggested = Math.min(30, Number(current) + 4)
+    setAuditNewCaScore(String(suggested))
+    setAuditAdjustment(`Verified CA score: ${suggested}/30`)
   }
 
   const handleSubmitAuditMemo = async (e) => {
     e.preventDefault()
     if (!activeAuditComplaint) return
     setSubmittingAudit(true)
+    const newCaNum = auditNewCaScore !== '' && !isNaN(Number(auditNewCaScore)) ? Number(auditNewCaScore) : null
     const findings = auditFindings.trim() || 'Physical Continuous Assessment scripts audited for candidate. Discrepancy confirmed against marked test script and recommended for broadsheet rectification.'
-    const adjustment = auditAdjustment.trim() || 'Continuous Assessment score verified and recommended for amendment'
+    const adjustment = auditAdjustment.trim() || (newCaNum !== null ? `Verified CA score: ${newCaNum}/30` : 'Continuous Assessment score verified and recommended for amendment')
     const memo = auditMemoRef.trim() || 'UNN/CSC/REC/2026/014'
     try {
-      await lecturerSubmitMemoToHOD(activeAuditComplaint.id, findings, adjustment, memo)
+      await lecturerSubmitMemoToHOD(activeAuditComplaint.id, findings, adjustment, memo, newCaNum)
       setStatusMessage({
         type: 'success',
         text: `Official Memorandum (${memo}) requesting result withdrawal and rectification has been dispatched to HOD Dr. (Mrs.) Ifeoma Nwokoye.`
@@ -720,7 +727,27 @@ export default function LecturerDashboardPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                    Verified CA (/30)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    required
+                    value={auditNewCaScore}
+                    onChange={(e) => {
+                      setAuditNewCaScore(e.target.value)
+                      if (e.target.value) {
+                        setAuditAdjustment(`Verified CA score: ${e.target.value}/30`)
+                      }
+                    }}
+                    placeholder="e.g. 28"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-bold text-slate-900 bg-white"
+                  />
+                </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1">
                     Verified Score Adjustment
@@ -730,13 +757,13 @@ export default function LecturerDashboardPage() {
                     required
                     value={auditAdjustment}
                     onChange={(e) => setAuditAdjustment(e.target.value)}
-                    placeholder="e.g. Continuous Assessment adjustment verified upon script audit"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-emerald-700"
+                    placeholder="e.g. Verified CA score: 28/30"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-semibold text-emerald-700 bg-white"
                   />
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    Official Memo Reference Number
+                    Official Memo Reference
                   </label>
                   <input
                     type="text"
@@ -744,7 +771,7 @@ export default function LecturerDashboardPage() {
                     value={auditMemoRef}
                     onChange={(e) => setAuditMemoRef(e.target.value)}
                     placeholder="e.g. UNN/CSC/REC/2026/014"
-                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-mono"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-mono bg-white"
                   />
                 </div>
               </div>

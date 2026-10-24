@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v14'
+const STORAGE_KEY = 'dist_results_system_data_v15'
 
 const initialSeedData = {
   departments: [
@@ -1329,7 +1329,7 @@ export async function referComplaintToLecturer(complaintId, referralNote) {
   return null
 }
 
-export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = 'Continuous Assessment score verified and recommended for amendment', memoRef = 'UNN/CSC/REC/2026/014') {
+export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAdjustment = 'Continuous Assessment score verified and recommended for amendment', memoRef = 'UNN/CSC/REC/2026/014', newCaScore = null) {
   const local = getLocalData()
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
@@ -1337,6 +1337,9 @@ export async function lecturerSubmitMemoToHOD(complaintId, findings, requestedAd
     local.complaints[idx].lecturer_findings = findings ? findings.trim() : 'Physical Continuous Assessment scripts audited for candidate. Discrepancy confirmed against marked test script and recommended for broadsheet rectification.'
     local.complaints[idx].requested_adjustment = requestedAdjustment
     local.complaints[idx].hod_memo_ref = memoRef
+    if (newCaScore !== null && newCaScore !== undefined && !isNaN(Number(newCaScore))) {
+      local.complaints[idx].new_ca_score = Number(newCaScore)
+    }
     local.complaints[idx].lecturer_memo_date = new Date().toISOString()
     saveLocalData(local)
     return local.complaints[idx]
@@ -1358,8 +1361,8 @@ export async function hodApproveWithdrawal(complaintId, hodNotes = 'Approved for
   return null
 }
 
-export async function submitLecturerRectification(complaintId, lecturerFindings, memoRef = 'UNN/CSC/REC/2026/014') {
-  return lecturerSubmitMemoToHOD(complaintId, lecturerFindings, 'Continuous Assessment score verified and recommended for amendment', memoRef)
+export async function submitLecturerRectification(complaintId, lecturerFindings, memoRef = 'UNN/CSC/REC/2026/014', newCaScore = null) {
+  return lecturerSubmitMemoToHOD(complaintId, lecturerFindings, 'Continuous Assessment score verified and recommended for amendment', memoRef, newCaScore)
 }
 
 export async function examOfficerFinalizeRectification(complaintId, finalResponse) {
@@ -1367,47 +1370,94 @@ export async function examOfficerFinalizeRectification(complaintId, finalRespons
   const idx = local.complaints.findIndex(c => c.id === complaintId)
   if (idx >= 0) {
     const cmp = local.complaints[idx]
-    const resp = finalResponse ? finalResponse.trim() : `Physical script audit confirmed by the Course Lecturer. Result broadsheet line item amended under HOD approval Memo ${cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment score rectified and Senate master records updated.`
+    const resp = finalResponse 
+      ? finalResponse.trim() 
+      : `Physical script audit confirmed by the Course Lecturer. Result broadsheet line item amended under HOD approval Memo ${cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}. Continuous Assessment score rectified and Senate master records updated.`
     local.complaints[idx].status = 'resolved'
     local.complaints[idx].exam_officer_response = resp
     local.complaints[idx].resolved_at = new Date().toISOString()
 
-    // Dynamically update the student's actual score in final_results and ca_scores!
-    if (local.final_results && local.final_results.length > 0) {
-      const finIdx = local.final_results.findIndex(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)
-      if (finIdx >= 0) {
-        const currentCa = Number(local.final_results[finIdx].ca_score) || 20
-        const currentExam = Number(local.final_results[finIdx].exam_score) || 50
-        
-        let delta = 4
-        if (cmp.requested_adjustment) {
-          const matchPlus = cmp.requested_adjustment.match(/\+(\d+)/)
-          if (matchPlus) delta = parseInt(matchPlus[1], 10)
-        }
-        const newCa = Math.min(30, currentCa + delta)
-        const newTotal = newCa + currentExam
-        const { grade, gradePoint } = calculateGrade(newTotal)
+    // Determine current baseline scores for this specific student and course
+    const existingFin = (local.final_results || []).find(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)
+    const existingCa = (local.ca_scores || []).find(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)
+    const existingExam = (local.exam_scores || []).find(e => e.student_id === cmp.student_id && e.course_id === cmp.course_id)
 
-        local.final_results[finIdx].ca_score = newCa
-        local.final_results[finIdx].total_score = newTotal
-        local.final_results[finIdx].grade = grade
-        local.final_results[finIdx].grade_point = gradePoint
+    const currentCa = existingFin ? Number(existingFin.ca_score) : (existingCa ? Number(existingCa.ca_score) : 20)
+    const currentExam = existingFin ? Number(existingFin.exam_score) : (existingExam ? Number(existingExam.exam_score) : 52)
+
+    // Calculate verified new CA score dynamically from lecturer input
+    let newCa = currentCa + 4 // safe fallback default
+    if (cmp.new_ca_score !== undefined && cmp.new_ca_score !== null && !isNaN(Number(cmp.new_ca_score))) {
+      newCa = Number(cmp.new_ca_score)
+    } else if (cmp.requested_adjustment) {
+      const text = cmp.requested_adjustment.trim()
+      const slashMatch = text.match(/(\d+)\s*\/\s*30/)
+      const toMatch = text.match(/(?:to|->)\s*(\d+)/i)
+      const plusMatch = text.match(/\+\s*(\d+)/)
+      const directNum = text.match(/\b([1-3]?[0-9])\b/)
+
+      if (slashMatch) {
+        newCa = parseInt(slashMatch[1], 10)
+      } else if (toMatch) {
+        newCa = parseInt(toMatch[1], 10)
+      } else if (plusMatch) {
+        newCa = currentCa + parseInt(plusMatch[1], 10)
+      } else if (directNum && parseInt(directNum[1], 10) <= 30) {
+        newCa = parseInt(directNum[1], 10)
       }
     }
+    // Clamp between 0 and 30
+    newCa = Math.min(30, Math.max(0, newCa))
 
-    if (local.ca_scores && local.ca_scores.length > 0) {
-      const caIdx = local.ca_scores.findIndex(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)
-      if (caIdx >= 0) {
-        let delta = 4
-        if (cmp.requested_adjustment) {
-          const matchPlus = cmp.requested_adjustment.match(/\+(\d+)/)
-          if (matchPlus) delta = parseInt(matchPlus[1], 10)
-        }
-        local.ca_scores[caIdx].ca_score = Math.min(30, (Number(local.ca_scores[caIdx].ca_score) || 20) + delta)
-      }
+    const newTotal = newCa + currentExam
+    const { grade, gradePoint } = calculateGrade(newTotal)
+
+    // 1. Update or Insert final_results
+    const finIdx = (local.final_results || []).findIndex(f => f.student_id === cmp.student_id && f.course_id === cmp.course_id)
+    if (finIdx >= 0) {
+      local.final_results[finIdx].ca_score = newCa
+      local.final_results[finIdx].total_score = newTotal
+      local.final_results[finIdx].grade = grade
+      local.final_results[finIdx].grade_point = gradePoint
+      local.final_results[finIdx].status = 'approved'
+    } else {
+      local.final_results = local.final_results || []
+      local.final_results.push({
+        id: generateUUID(),
+        student_id: cmp.student_id,
+        course_id: cmp.course_id,
+        ca_score: newCa,
+        exam_score: currentExam,
+        total_score: newTotal,
+        grade,
+        grade_point: gradePoint,
+        status: 'approved',
+        session: '2025/26',
+        created_at: new Date().toISOString()
+      })
+    }
+
+    // 2. Update or Insert ca_scores
+    const caIdx = (local.ca_scores || []).findIndex(c => c.student_id === cmp.student_id && c.course_id === cmp.course_id)
+    if (caIdx >= 0) {
+      local.ca_scores[caIdx].ca_score = newCa
+    } else {
+      local.ca_scores = local.ca_scores || []
+      local.ca_scores.push({
+        id: generateUUID(),
+        student_id: cmp.student_id,
+        course_id: cmp.course_id,
+        ca_score: newCa,
+        session: '2025/26',
+        uploaded_at: new Date().toISOString()
+      })
     }
 
     saveLocalData(local)
+
+    // 3. Automatically Recompute the Student's Official CGPA & Classification!
+    await recomputeStudentCGPA(cmp.student_id)
+
     return local.complaints[idx]
   }
   return null

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
 import { getStudents, getCourses, getComplaints, createComplaint, getFinalResults } from '../../../../lib/db'
+import { normalizeRegNumber } from '../../../../lib/grading'
 import { MessageSquarePlus, Send, CheckCircle, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
 export default function StudentComplaintPage() {
@@ -23,7 +24,7 @@ export default function StudentComplaintPage() {
         const [studs, crs] = await Promise.all([getStudents(), getCourses()])
 
         const activeStudent = studs.find(
-          s => s.id === user?.id || s.reg_number === user?.reg_number || s.reg_number === '2022/234567'
+          s => s.id === user?.id || (user?.reg_number && normalizeRegNumber(s.reg_number) === normalizeRegNumber(user.reg_number))
         ) || studs[0]
 
         setStudent(activeStudent)

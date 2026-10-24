@@ -6,6 +6,7 @@ import 'jspdf-autotable'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
 import { getStudents, getCourses, getFinalResults, getDepartments, getCgpaRecord } from '../../../../lib/db'
+import { normalizeRegNumber } from '../../../../lib/grading'
 import { Printer, Download, School, ShieldCheck, CheckCircle2 } from 'lucide-react'
 
 export default function StudentPrintResultPage() {
@@ -28,7 +29,7 @@ export default function StudentPrintResultPage() {
         ])
 
         const activeStudent = studs.find(
-          s => s.id === user?.id || s.reg_number === user?.reg_number || s.reg_number === '2022/234567'
+          s => s.id === user?.id || (user?.reg_number && normalizeRegNumber(s.reg_number) === normalizeRegNumber(user.reg_number))
         ) || studs[0]
 
         setStudent(activeStudent)
