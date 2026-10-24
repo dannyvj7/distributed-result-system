@@ -4,16 +4,17 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '../../../components/DashboardLayout'
 import { useAuth } from '../../../lib/authContext'
-import { getCourses, getEnrollments, getExamScores, getCaScores, getFinalResults, submitResultsToHOD } from '../../../lib/db'
+import { getCourses, getEnrollments, getExamScores, getCaScores, getFinalResults, submitResultsToHOD, getStudents } from '../../../lib/db'
 import {
   BookOpen, Upload, FileCheck, ArrowRight, CheckCircle2, Clock,
-  AlertCircle, Send, Lock, CheckCircle, BookMarked
+  AlertCircle, Send, Lock, CheckCircle, BookMarked, PenTool, ShieldCheck, X, FileText
 } from 'lucide-react'
 
 export default function LecturerDashboardPage() {
   const { user } = useAuth()
   const [courses, setCourses] = useState([])
   const [enrollments, setEnrollments] = useState([])
+  const [students, setStudents] = useState([])
   const [examScores, setExamScores] = useState([])
   const [caScores, setCaScores] = useState([])
   const [finalResults, setFinalResults] = useState([])
@@ -21,14 +22,19 @@ export default function LecturerDashboardPage() {
   const [submitting, setSubmitting] = useState(null) // courseId currently being submitted
   const [statusMessage, setStatusMessage] = useState(null)
 
+  // Digital Signature Modal State
+  const [signingCourse, setSigningCourse] = useState(null)
+  const [hasConfirmedAttestation, setHasConfirmedAttestation] = useState(false)
+
   const loadData = async () => {
     try {
-      const [allCourses, allEnrolls, allExams, allCas, allFinals] = await Promise.all([
+      const [allCourses, allEnrolls, allExams, allCas, allFinals, allStudents] = await Promise.all([
         getCourses(),
         getEnrollments(),
         getExamScores(),
         getCaScores(),
-        getFinalResults()
+        getFinalResults(),
+        getStudents()
       ])
 
       // Strictly filter courses allocated to this specific lecturer
@@ -43,6 +49,7 @@ export default function LecturerDashboardPage() {
       setExamScores(allExams)
       setCaScores(allCas)
       setFinalResults(allFinals)
+      setStudents(allStudents)
     } finally {
       setLoading(false)
     }
@@ -52,18 +59,32 @@ export default function LecturerDashboardPage() {
     loadData()
   }, [user])
 
-  const handleSubmitToHOD = async (courseId) => {
+  const handleOpenSignModal = (course) => {
+    setSigningCourse(course)
+    setHasConfirmedAttestation(false)
+  }
+
+  const handleConfirmSignAndSubmit = async () => {
+    if (!signingCourse || !hasConfirmedAttestation) return
+    const courseId = signingCourse.id
     setSubmitting(courseId)
     setStatusMessage(null)
     try {
-      await submitResultsToHOD(courseId, user?.id)
+      const lecturerSignature = {
+        signed_by: user?.full_name || 'Course Lecturer',
+        email: user?.email,
+        timestamp: new Date().toISOString(),
+        verified: true
+      }
+      await submitResultsToHOD(courseId, user?.id, lecturerSignature)
       setStatusMessage({
         type: 'success',
-        text: 'Results successfully signed and submitted to HOD for review. The course results are now locked pending HOD approval.'
+        text: `Results for ${signingCourse.code} have been formally signed with your digital signature and submitted to the Head of Department (Dr. (Mrs.) Ifeoma Nwokoye). The broadsheet is now locked pending departmental review.`
       })
+      setSigningCourse(null)
       await loadData()
     } catch (err) {
-      setStatusMessage({ type: 'error', text: 'Failed to submit results to HOD. Please try again.' })
+      setStatusMessage({ type: 'error', text: 'Failed to sign and submit results to HOD. Please try again.' })
     } finally {
       setSubmitting(null)
     }
@@ -290,12 +311,12 @@ export default function LecturerDashboardPage() {
                           </span>
                         ) : hasDraft ? (
                           <button
-                            onClick={() => handleSubmitToHOD(course.id)}
+                            onClick={() => handleOpenSignModal(course)}
                             disabled={submitting === course.id}
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1E3A8A] hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-900/20 transition disabled:opacity-50"
                           >
-                            <Send className="w-3.5 h-3.5" />
-                            {submitting === course.id ? 'Submitting...' : 'Sign & Submit to HOD'}
+                            <PenTool className="w-3.5 h-3.5" />
+                            Review & Sign Broadsheet
                           </button>
                         ) : (
                           <div className="flex items-center justify-end gap-2">
@@ -326,6 +347,163 @@ export default function LecturerDashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* Digital Signature Modal */}
+      {signingCourse && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full my-8 p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 text-primary flex items-center justify-center shrink-0">
+                  <PenTool className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-primary uppercase tracking-wider">
+                      Official Broadsheet Endorsement
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono">2025/2026 Session</span>
+                  </div>
+                  <h2 className="text-xl font-extrabold text-slate-900 mt-0.5">
+                    {signingCourse.code} — {signingCourse.title}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Department of Computer Science &bull; {signingCourse.credit_units} Credit Units
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSigningCourse(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Broadsheet Candidate Preview */}
+            <div className="my-5">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-primary" /> Compiled Candidate Broadsheet
+                </h4>
+                <span className="text-xs font-semibold text-slate-500">
+                  {finalResults.filter(f => f.course_id === signingCourse.id).length} Students Evaluated
+                </span>
+              </div>
+
+              <div className="border border-slate-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+                <table className="w-full text-left text-xs text-slate-600">
+                  <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-200 sticky top-0">
+                    <tr>
+                      <th className="py-2.5 px-3">Reg Number</th>
+                      <th className="py-2.5 px-3">Candidate Name</th>
+                      <th className="py-2.5 px-3 text-center">CA (/30)</th>
+                      <th className="py-2.5 px-3 text-center">Exam (/70)</th>
+                      <th className="py-2.5 px-3 text-center font-bold">Total (/100)</th>
+                      <th className="py-2.5 px-3 text-center">Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {finalResults.filter(f => f.course_id === signingCourse.id).map(res => {
+                      const stud = students.find(s => s.id === res.student_id)
+                      return (
+                        <tr key={res.id} className="hover:bg-slate-50">
+                          <td className="py-2 px-3 font-mono font-semibold text-slate-900">{stud?.reg_number || 'N/A'}</td>
+                          <td className="py-2 px-3 font-medium text-slate-800">{stud?.full_name || 'Candidate'}</td>
+                          <td className="py-2 px-3 text-center text-slate-600">{res.ca_score}</td>
+                          <td className="py-2 px-3 text-center text-slate-600">{res.exam_score}</td>
+                          <td className="py-2 px-3 text-center font-bold text-slate-900">{res.total_score}</td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`px-1.5 py-0.5 rounded font-bold text-[11px] ${
+                              res.grade === 'A' ? 'bg-emerald-100 text-emerald-800' :
+                              res.grade === 'B' ? 'bg-blue-100 text-blue-800' :
+                              res.grade === 'C' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {res.grade}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Statutory Attestation Statement */}
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-4 my-5 text-xs text-amber-900 leading-relaxed">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-amber-950 mb-1">
+                <ShieldCheck className="w-4 h-4 text-amber-600" /> Statutory Academic Attestation
+              </div>
+              <p>
+                In accordance with the National Universities Commission (NUC) BMAS/CCMAS and University of Nigeria Examination Regulations, I hereby solemnly declare and certify that the Continuous Assessment and Examination scores presented on this broadsheet represent the true, verified, and unadulterated evaluation of the registered candidates. I confirm that all scores have been vetted against physical continuous assessment records and examination booklets.
+              </p>
+            </div>
+
+            {/* Digital Signature Card */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 my-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Lecturer Digital Signature
+                </span>
+                <div className="font-serif italic text-2xl font-bold text-primary tracking-wide mt-1 select-none">
+                  {user?.full_name || 'Dr. Aminu Ibrahim'}
+                </div>
+                <span className="text-[11px] text-slate-500 font-medium block mt-0.5">
+                  Course Lecturer & Examiner &bull; Department of Computer Science
+                </span>
+              </div>
+
+              <div className="text-right sm:border-l sm:border-slate-200 sm:pl-4">
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 mb-1">
+                  <CheckCircle2 className="w-3 h-3" /> Timestamp Ready
+                </span>
+                <div className="text-xs text-slate-600 font-mono">
+                  {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </div>
+                <div className="text-[10px] text-slate-400 font-mono">
+                  Audit ID: UNN-CSC-{signingCourse.code.replace(' ', '')}-VERIFIED
+                </div>
+              </div>
+            </div>
+
+            {/* Confirmation Checkbox */}
+            <label className="flex items-start gap-3 p-3 bg-blue-50/50 border border-blue-200 rounded-xl cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={hasConfirmedAttestation}
+                onChange={(e) => setHasConfirmedAttestation(e.target.checked)}
+                className="mt-0.5 w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer"
+              />
+              <span className="text-xs text-slate-700 font-medium leading-relaxed">
+                I formally affix my digital signature to this course broadsheet and submit it to the Head of Department (Dr. (Mrs.) Ifeoma Nwokoye) for official departmental review and approval. I understand this action locks scores from further editing.
+              </span>
+            </label>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-5 mt-5 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setSigningCourse(null)}
+                className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!hasConfirmedAttestation || submitting === signingCourse.id}
+                onClick={handleConfirmSignAndSubmit}
+                className="px-6 py-2.5 text-xs font-bold text-white bg-primary hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-md shadow-blue-900/20 transition flex items-center gap-2"
+              >
+                <PenTool className="w-4 h-4" />
+                {submitting === signingCourse.id ? 'Submitting to HOD...' : 'Affix Digital Signature & Submit to HOD'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   )
 }

@@ -833,7 +833,7 @@ export async function saveFinalResults(results) {
   return true
 }
 
-export async function submitResultsToHOD(courseId, lecturerId) {
+export async function submitResultsToHOD(courseId, lecturerId, signature = null) {
   // Changes all draft final_results for this course to 'submitted'
   // This signals to HOD that lecturer has signed off
   if (isSupabaseReady()) {
@@ -849,7 +849,13 @@ export async function submitResultsToHOD(courseId, lecturerId) {
   const local = getLocalData()
   local.final_results = local.final_results.map(r =>
     r.course_id === courseId && r.status === 'draft'
-      ? { ...r, status: 'submitted', submitted_at: new Date().toISOString(), submitted_by: lecturerId }
+      ? { 
+          ...r, 
+          status: 'submitted', 
+          submitted_at: new Date().toISOString(), 
+          submitted_by: lecturerId,
+          lecturer_signature: signature || (r.lecturer_signature || true)
+        }
       : r
   )
   saveLocalData(local)
@@ -1110,6 +1116,34 @@ export async function createComplaint(studentId, courseId, complaintText) {
   local.complaints.unshift(entry)
   saveLocalData(local)
   return entry
+}
+
+export async function referComplaintToLecturer(complaintId, referralNote) {
+  const local = getLocalData()
+  const idx = local.complaints.findIndex(c => c.id === complaintId)
+  if (idx >= 0) {
+    local.complaints[idx].status = 'referred_to_lecturer'
+    local.complaints[idx].referral_note = referralNote ? referralNote.trim() : 'Referred to course lecturer for physical script audit and Continuous Assessment verification.'
+    local.complaints[idx].referred_at = new Date().toISOString()
+    saveLocalData(local)
+    return local.complaints[idx]
+  }
+  return null
+}
+
+export async function submitLecturerRectification(complaintId, lecturerFindings, memoRef = 'UNN/CSC/REC/2026/014') {
+  const local = getLocalData()
+  const idx = local.complaints.findIndex(c => c.id === complaintId)
+  if (idx >= 0) {
+    local.complaints[idx].status = 'lecturer_verified'
+    local.complaints[idx].lecturer_findings = lecturerFindings ? lecturerFindings.trim() : 'Physical script retrieved and audited. Continuous assessment error confirmed. Official written memo dispatched to HOD requesting result amendment.'
+    local.complaints[idx].hod_memo_ref = memoRef
+    local.complaints[idx].hod_approved_withdrawal = true
+    local.complaints[idx].lecturer_verified_at = new Date().toISOString()
+    saveLocalData(local)
+    return local.complaints[idx]
+  }
+  return null
 }
 
 export async function resolveComplaint(complaintId, responseText) {

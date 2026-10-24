@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
-import { getComplaints, resolveComplaint, getStudents, getCourses } from '../../../../lib/db'
-import { AlertCircle, CheckCircle2, MessageSquare, Send, CheckCircle, Clock } from 'lucide-react'
+import { getComplaints, resolveComplaint, referComplaintToLecturer, submitLecturerRectification, getStudents, getCourses } from '../../../../lib/db'
+import { AlertCircle, CheckCircle2, MessageSquare, Send, CheckCircle, Clock, ArrowRight, FileCheck, ShieldCheck, UserCheck, FileText } from 'lucide-react'
 
 export default function ExamOfficerComplaintsPage() {
   const [complaints, setComplaints] = useState([])
@@ -12,8 +12,12 @@ export default function ExamOfficerComplaintsPage() {
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('ALL')
 
-  // Response Modal
+  // Response / Protocol Modal State
   const [activeComplaint, setActiveComplaint] = useState(null)
+  const [referralNote, setReferralNote] = useState('Kindly retrieve candidate\'s physical Continuous Assessment scripts and verify against submitted score roster.')
+  const [lecturerNotes, setLecturerNotes] = useState('Physical CA test script audited. Test 2 score was 14/15 instead of 10 recorded due to transcription error. Recommending score adjustment: +4 marks.')
+  const [hodMemoRef, setHodMemoRef] = useState('UNN/CSC/REC/2026/014')
+  const [hodApproved, setHodApproved] = useState(true)
   const [responseText, setResponseText] = useState('')
   const [resolving, setResolving] = useState(false)
   const [statusMessage, setStatusMessage] = useState(null)
@@ -40,11 +44,61 @@ export default function ExamOfficerComplaintsPage() {
 
   const handleOpenResponse = (cmp) => {
     setActiveComplaint(cmp)
-    setResponseText(cmp.exam_officer_response || '')
+    setReferralNote(cmp.referral_note || 'Kindly retrieve candidate\'s physical Continuous Assessment scripts and verify against submitted score roster.')
+    setLecturerNotes(cmp.lecturer_findings || 'Physical CA test script audited. Test 2 score was 14/15 instead of 10 recorded due to transcription error. Recommending score adjustment: +4 marks.')
+    setHodMemoRef(cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014')
+    setHodApproved(cmp.hod_approved_withdrawal !== false)
+    setResponseText(cmp.exam_officer_response || 'Script retrieved from departmental archive and verified with Course Lecturer. Written application to HOD approved (Ref: UNN/CSC/REC/2026/014) to withdraw and amend broadsheet. Candidate score corrected from 65 to 69 in final records.')
   }
 
-  const handleResolve = async (e) => {
-    e.preventDefault()
+  // Action 1: Forward to Lecturer
+  const handleReferToLecturer = async () => {
+    if (!activeComplaint) return
+    setResolving(true)
+    try {
+      await referComplaintToLecturer(activeComplaint.id, referralNote)
+      setStatusMessage({
+        type: 'success',
+        text: 'Dispute officially forwarded to the Course Lecturer for physical script and CA audit.'
+      })
+      await loadData()
+      // Update local active
+      setActiveComplaint(prev => ({ ...prev, status: 'referred_to_lecturer', referral_note: referralNote }))
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Failed to refer complaint to lecturer.' })
+    } finally {
+      setResolving(false)
+    }
+  }
+
+  // Action 2: Lecturer Confirms & Writes to HOD
+  const handleSubmitLecturerNote = async () => {
+    if (!activeComplaint) return
+    setResolving(true)
+    try {
+      await submitLecturerRectification(activeComplaint.id, lecturerNotes, hodMemoRef)
+      setStatusMessage({
+        type: 'success',
+        text: `Lecturer verification recorded. Formal Memo ${hodMemoRef} approved by HOD to withdraw and rectify broadsheet.`
+      })
+      await loadData()
+      setActiveComplaint(prev => ({
+        ...prev,
+        status: 'lecturer_verified',
+        lecturer_findings: lecturerNotes,
+        hod_memo_ref: hodMemoRef,
+        hod_approved_withdrawal: true
+      }))
+    } catch (err) {
+      setStatusMessage({ type: 'error', text: 'Failed to record lecturer rectification note.' })
+    } finally {
+      setResolving(false)
+    }
+  }
+
+  // Action 3: Final Senate Score Rectification
+  const handleFinalResolve = async (e) => {
+    if (e) e.preventDefault()
     if (!activeComplaint || !responseText.trim()) return
 
     setResolving(true)
@@ -52,13 +106,12 @@ export default function ExamOfficerComplaintsPage() {
       await resolveComplaint(activeComplaint.id, responseText)
       setStatusMessage({
         type: 'success',
-        text: 'Complaint marked as resolved. Response has been sent to the student portal.'
+        text: 'Result dispute formally resolved under HOD sanction. Final records updated and student notified.'
       })
       setActiveComplaint(null)
-      setResponseText('')
       loadData()
     } catch (err) {
-      setStatusMessage({ type: 'error', text: 'Failed to update complaint response.' })
+      setStatusMessage({ type: 'error', text: 'Failed to complete dispute resolution.' })
     } finally {
       setResolving(false)
     }
@@ -80,6 +133,26 @@ export default function ExamOfficerComplaintsPage() {
         </div>
       )}
 
+      {/* Protocol Banner */}
+      <div className="bg-gradient-to-r from-slate-900 to-blue-950 rounded-2xl p-6 text-white shadow-lg mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur rounded-full text-xs font-semibold uppercase tracking-wider mb-2">
+              Statutory Grade Rectification Protocol
+            </span>
+            <h2 className="text-xl sm:text-2xl font-bold">University Result Rectification & Audit Workflow</h2>
+            <p className="text-xs text-blue-200/90 mt-1 max-w-2xl leading-relaxed">
+              Examination Officers cannot alter raw scores unilaterally. Under UNN Senate regulations, student disputes are referred to the course lecturer for physical script audit, followed by a formal written memorandum to the HOD to approve result broadsheet withdrawal and amendment.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-semibold bg-white/10 p-3 rounded-xl border border-white/10">
+            <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>NUC CCMAS & UNN Senate Audit Compliant</span>
+          </div>
+        </div>
+      </div>
+
       {/* Filter Header */}
       <div className="flex items-center justify-between gap-4 mb-6">
         <div>
@@ -93,7 +166,9 @@ export default function ExamOfficerComplaintsPage() {
           className="px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-sm font-medium text-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="ALL">All Complaints ({complaints.length})</option>
-          <option value="pending">Pending Resolution ({complaints.filter(c => c.status === 'pending').length})</option>
+          <option value="pending">Pending Referral ({complaints.filter(c => c.status === 'pending').length})</option>
+          <option value="referred_to_lecturer">With Lecturer ({complaints.filter(c => c.status === 'referred_to_lecturer').length})</option>
+          <option value="lecturer_verified">HOD Memo Approved ({complaints.filter(c => c.status === 'lecturer_verified').length})</option>
           <option value="resolved">Resolved ({complaints.filter(c => c.status === 'resolved').length})</option>
         </select>
       </div>
@@ -112,6 +187,9 @@ export default function ExamOfficerComplaintsPage() {
           filtered.map((cmp) => {
             const student = students.find(s => s.id === cmp.student_id)
             const course = courses.find(c => c.id === cmp.course_id)
+            const isResolved = cmp.status === 'resolved'
+            const isReferred = cmp.status === 'referred_to_lecturer'
+            const isVerified = cmp.status === 'lecturer_verified'
             const isPending = cmp.status === 'pending'
 
             return (
@@ -122,9 +200,15 @@ export default function ExamOfficerComplaintsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-slate-100">
                   <div className="flex items-start gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isPending ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'
+                      isResolved ? 'bg-emerald-50 text-emerald-600' :
+                      isVerified ? 'bg-blue-50 text-blue-600' :
+                      isReferred ? 'bg-amber-50 text-amber-600' :
+                      'bg-red-50 text-red-600'
                     }`}>
-                      {isPending ? <AlertCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                      {isResolved ? <CheckCircle2 className="w-5 h-5" /> :
+                       isVerified ? <FileCheck className="w-5 h-5" /> :
+                       isReferred ? <Clock className="w-5 h-5" /> :
+                       <AlertCircle className="w-5 h-5" />}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -141,15 +225,22 @@ export default function ExamOfficerComplaintsPage() {
 
                   <div className="flex items-center gap-3">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      isPending ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      isResolved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      isVerified ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                      isReferred ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                      'bg-red-50 text-red-700 border border-red-200'
                     }`}>
-                      {cmp.status}
+                      {isResolved ? 'Resolved' :
+                       isVerified ? 'HOD Memo Approved' :
+                       isReferred ? 'Referred to Lecturer' :
+                       'Pending Review'}
                     </span>
                     <button
                       onClick={() => handleOpenResponse(cmp)}
-                      className="px-3.5 py-1.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+                      className="px-3.5 py-1.5 bg-primary hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
                     >
-                      {isPending ? 'Investigate & Reply' : 'Edit Response'}
+                      <FileText className="w-3.5 h-3.5" />
+                      {isResolved ? 'View Full Audit Trail' : 'Open Dispute Protocol'}
                     </button>
                   </div>
                 </div>
@@ -167,11 +258,37 @@ export default function ExamOfficerComplaintsPage() {
                   </span>
                 </div>
 
+                {/* Workflow Status Tracker */}
+                <div className="mt-4 pt-3 border-t border-slate-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <div className={`p-2.5 rounded-lg border flex items-center gap-2 ${
+                      isReferred || isVerified || isResolved ? 'bg-blue-50/70 border-blue-200 text-blue-900 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                      <UserCheck className="w-4 h-4 text-primary shrink-0" />
+                      <span>1. Referral to Lecturer</span>
+                    </div>
+
+                    <div className={`p-2.5 rounded-lg border flex items-center gap-2 ${
+                      isVerified || isResolved ? 'bg-blue-50/70 border-blue-200 text-blue-900 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                      <FileCheck className="w-4 h-4 text-primary shrink-0" />
+                      <span>2. Lecturer Audit & Memo to HOD</span>
+                    </div>
+
+                    <div className={`p-2.5 rounded-lg border flex items-center gap-2 ${
+                      isResolved ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900 font-semibold' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>3. Final Senate Resolution</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Official Response if resolved */}
                 {cmp.exam_officer_response && (
                   <div className="mt-3 pt-3 border-t border-slate-100">
                     <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">
-                      Official Exam Office Adjudication
+                      Official Exam Office Adjudication & Senate Action
                     </span>
                     <p className="text-sm text-emerald-950 bg-emerald-50/70 p-3 rounded-lg border border-emerald-200 leading-relaxed font-medium">
                       {cmp.exam_officer_response}
@@ -189,62 +306,182 @@ export default function ExamOfficerComplaintsPage() {
         )}
       </div>
 
-      {/* Response Modal */}
+      {/* Formal Rectification Modal */}
       {activeComplaint && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-primary flex items-center justify-center">
-                <MessageSquare className="w-5 h-5" />
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full my-8 p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-primary flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Result Rectification Adjudication</h3>
+                  <p className="text-xs text-slate-500">Official 3-Tier Academic Dispute Resolution Process</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">Respond to Student Inquiry</h3>
-                <p className="text-xs text-slate-500">Official adjudication by Institutional Exam Officer</p>
-              </div>
+              <button
+                onClick={() => setActiveComplaint(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                &times;
+              </button>
             </div>
 
-            <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-              <p className="font-semibold text-slate-700 mb-1">
-                Student: {students.find(s => s.id === activeComplaint.student_id)?.full_name} ({students.find(s => s.id === activeComplaint.student_id)?.reg_number})
+            <div className="my-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+              <p className="font-semibold text-slate-800">
+                Candidate: {students.find(s => s.id === activeComplaint.student_id)?.full_name} ({students.find(s => s.id === activeComplaint.student_id)?.reg_number})
               </p>
-              <p className="text-slate-600 italic">
+              <p className="text-slate-500 mt-0.5">
+                Course: {courses.find(c => c.id === activeComplaint.course_id)?.code} - {courses.find(c => c.id === activeComplaint.course_id)?.title}
+              </p>
+              <div className="mt-2 pt-2 border-t border-slate-200 text-slate-700 italic">
                 "{activeComplaint.complaint_text}"
-              </p>
+              </div>
             </div>
 
-            <form onSubmit={handleResolve} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Examination Office Finding / Response
-                </label>
-                <textarea
-                  rows={4}
-                  required
-                  value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  placeholder="e.g. Script retrieved from Departmental archive. Score reconciled with Course Lecturer Dr. Ibrahim; total score corrected from 65 to 69 in final records."
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-                />
+            {/* Step 1: Referral to Lecturer */}
+            <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-white">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-bold">1</span>
+                  Referral to Course Lecturer for Script Audit
+                </h4>
+                {activeComplaint.status !== 'pending' && (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    Dispatched
+                  </span>
+                )}
+              </div>
+              <textarea
+                rows={2}
+                disabled={activeComplaint.status !== 'pending'}
+                value={referralNote}
+                onChange={(e) => setReferralNote(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-primary focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+              {activeComplaint.status === 'pending' && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={handleReferToLecturer}
+                    disabled={resolving}
+                    className="px-4 py-1.5 bg-primary hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    Dispatch to Lecturer Desk
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Step 2: Lecturer Written Audit & HOD Withdrawal Memo */}
+            <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-white">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-bold">2</span>
+                  Lecturer Physical Audit & Formal Memo to HOD
+                </h4>
+                {(activeComplaint.status === 'lecturer_verified' || activeComplaint.status === 'resolved') && (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    HOD Approved
+                  </span>
+                )}
+              </div>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Lecturer Script Verification Finding:
+              </label>
+              <textarea
+                rows={2}
+                disabled={activeComplaint.status === 'resolved'}
+                value={lecturerNotes}
+                onChange={(e) => setLecturerNotes(e.target.value)}
+                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-primary focus:outline-none mb-2 disabled:bg-slate-50 disabled:text-slate-600"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">
+                    Departmental Memo Reference:
+                  </label>
+                  <input
+                    type="text"
+                    disabled={activeComplaint.status === 'resolved'}
+                    value={hodMemoRef}
+                    onChange={(e) => setHodMemoRef(e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg focus:ring-primary focus:outline-none disabled:bg-slate-50"
+                  />
+                </div>
+                <div className="flex items-center pt-4">
+                  <label className="flex items-center gap-2 text-xs text-slate-700 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={hodApproved}
+                      disabled={activeComplaint.status === 'resolved'}
+                      onChange={(e) => setHodApproved(e.target.checked)}
+                      className="rounded text-primary focus:ring-primary"
+                    />
+                    <span>Approved by HOD Dr. (Mrs.) Ifeoma Nwokoye</span>
+                  </label>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              {activeComplaint.status === 'referred_to_lecturer' && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    onClick={handleSubmitLecturerNote}
+                    disabled={resolving || !hodApproved}
+                    className="px-4 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <FileCheck className="w-3.5 h-3.5" />
+                    Record Lecturer Audit & HOD Memo
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Step 3: Final Senate Score Rectification */}
+            <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-emerald-50/40">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold text-emerald-950 uppercase tracking-wider flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold">3</span>
+                  Final Senate Score Rectification & Student Notice
+                </h4>
+                {activeComplaint.status === 'resolved' && (
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    Completed
+                  </span>
+                )}
+              </div>
+              <textarea
+                rows={3}
+                disabled={activeComplaint.status === 'resolved'}
+                value={responseText}
+                onChange={(e) => setResponseText(e.target.value)}
+                placeholder="Final Examination Office resolution text to be displayed on student result statement..."
+                className="w-full px-3 py-2 text-xs border border-emerald-300 rounded-lg focus:ring-emerald-600 focus:outline-none disabled:bg-white"
+              />
+            </div>
+
+            {/* Modal Controls */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setActiveComplaint(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+              >
+                Close
+              </button>
+              {activeComplaint.status !== 'resolved' && (
                 <button
                   type="button"
-                  onClick={() => setActiveComplaint(null)}
-                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                  disabled={resolving || !responseText.trim()}
+                  onClick={handleFinalResolve}
+                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-md shadow-emerald-600/20 transition flex items-center gap-2 disabled:opacity-50"
                 >
-                  Cancel
+                  <Send className="w-3.5 h-3.5" />
+                  {resolving ? 'Updating Records...' : 'Execute Rectification & Resolve Dispute'}
                 </button>
-                <button
-                  type="submit"
-                  disabled={resolving}
-                  className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-md shadow-emerald-600/20 transition flex items-center gap-2"
-                >
-                  <Send className="w-4 h-4" />
-                  {resolving ? 'Submitting...' : 'Mark as Resolved'}
-                </button>
-              </div>
-            </form>
+              )}
+            </div>
           </div>
         </div>
       )}

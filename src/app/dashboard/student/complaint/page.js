@@ -162,9 +162,15 @@ export default function StudentComplaintPage() {
                       {course?.code}: {course?.title}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${
-                      isResolved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      isResolved ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      c.status === 'lecturer_verified' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                      c.status === 'referred_to_lecturer' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                      'bg-amber-50 text-amber-700 border border-amber-200'
                     }`}>
-                      {c.status}
+                      {isResolved ? 'Resolved' :
+                       c.status === 'lecturer_verified' ? 'HOD Memo Approved' :
+                       c.status === 'referred_to_lecturer' ? 'With Lecturer' :
+                       'Pending Review'}
                     </span>
                   </div>
 
@@ -180,12 +186,12 @@ export default function StudentComplaintPage() {
                     </span>
                   </div>
 
-                  {/* Official Response */}
+                  {/* Official Response & Progress */}
                   {isResolved ? (
                     <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl mt-2">
                       <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5 mb-1">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        Examination Officer Adjudication
+                        Examination Officer Adjudication & Rectification
                       </span>
                       <p className="text-xs text-emerald-950 font-medium leading-relaxed">
                         {c.exam_officer_response}
@@ -195,6 +201,26 @@ export default function StudentComplaintPage() {
                           Resolved on: {new Date(c.resolved_at).toLocaleString()}
                         </span>
                       )}
+                    </div>
+                  ) : c.status === 'lecturer_verified' ? (
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold">
+                        <CheckCircle className="w-4 h-4 text-purple-600 shrink-0" />
+                        <span>Lecturer Audit Completed & Approved by HOD</span>
+                      </div>
+                      <p className="text-purple-800">
+                        The course lecturer verified your test script and submitted formal memorandum {c.hod_memo_ref || 'UNN/CSC/REC/2026/014'} to the Head of Department. Awaiting final Senate record update by the Exam Officer.
+                      </p>
+                    </div>
+                  ) : c.status === 'referred_to_lecturer' ? (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-1">
+                      <div className="flex items-center gap-2 font-bold">
+                        <Clock className="w-4 h-4 text-primary shrink-0" />
+                        <span>Referred to Course Lecturer for Script Audit</span>
+                      </div>
+                      <p className="text-blue-800">
+                        The Exam Officer has forwarded your inquiry to the assigned course lecturer to retrieve and inspect your original continuous assessment scripts.
+                      </p>
                     </div>
                   ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
