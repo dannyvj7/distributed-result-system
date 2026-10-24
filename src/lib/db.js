@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v16'
+const STORAGE_KEY = 'dist_results_system_data_v17'
 
 const initialSeedData = {
   departments: [
@@ -180,6 +180,16 @@ const initialSeedData = {
       lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa22' // Dr. Babatunde Fashola
     },
     {
+      id: 'c3030000-0000-0000-0000-000000000303',
+      code: 'COS 303',
+      title: 'Operating Systems & System Programming',
+      credit_units: 3,
+      semester: 'first',
+      session: '2025/26',
+      department_id: 'd1111111-1111-1111-1111-111111111111',
+      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa31' // Dr. Ifeanyi Ugwu
+    },
+    {
       id: 'c3430000-0000-0000-0000-000000000343',
       code: 'COS 343',
       title: 'Database Design & Management',
@@ -201,90 +211,42 @@ const initialSeedData = {
     }
   ],
   enrollments: [
-    // ── COS 101 Enrollments (100L / General) ──────────────────────────
-    { id: 'e1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' },
+    // ── COS 101 Enrollments (100L) ──────────────────────────────────
+    { id: 'e1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2022/23', semester: 'first' },
     { id: 'e2', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' },
     { id: 'e3', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' },
+    { id: 'e3b', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2024/25', semester: 'first' },
+    { id: 'e3c', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2023/24', semester: 'first' },
 
     // ── COS 201 Enrollments (200L) ───────────────────────────────────
-    { id: 'e4', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' },
+    { id: 'e4', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2023/24', semester: 'first' },
     { id: 'e5', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' },
     { id: 'e6', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' },
+    { id: 'e6b', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2024/25', semester: 'first' },
 
     // ── COS 202 Enrollments (200L) ───────────────────────────────────
-    { id: 'e7', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
+    { id: 'e7', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2023/24', semester: 'second' },
     { id: 'e8', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
     { id: 'e9', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
+    { id: 'e9b', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2024/25', semester: 'second' },
+
+    // ── COS 303 Enrollments (300L) ───────────────────────────────────
+    { id: 'e10a', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3030000-0000-0000-0000-000000000303', session: '2024/25', semester: 'first' },
+    { id: 'e11a', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3030000-0000-0000-0000-000000000303', session: '2025/26', semester: 'first' },
 
     // ── COS 343 Enrollments (300L) ───────────────────────────────────
-    { id: 'e10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' },
-    { id: 'e11', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' },
+    { id: 'e10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2024/25', semester: 'first' },
+    { id: 'e11', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' },
 
     // ── COS 414 Enrollments (400L) ───────────────────────────────────
     { id: 'e12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', session: '2025/26', semester: 'second' }
   ],
-  exam_scores: [
-    // COS 101 Exam Scores
-    { id: 'es1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 52, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es2', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 58, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es3', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 45, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 201 Exam Scores (Dr. Ngozi Eze)
-    { id: 'es4', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2010000-0000-0000-0000-000000000201', exam_score: 54, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es5', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', exam_score: 60, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es6', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2010000-0000-0000-0000-000000000201', exam_score: 58, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 202 Exam Scores (Dr. Babatunde Fashola)
-    { id: 'es7', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2020000-0000-0000-0000-000000000202', exam_score: 51, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es8', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', exam_score: 55, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es9', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', exam_score: 53, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 343 Exam Scores (Dr. Ifeanyi Ugwu)
-    { id: 'es10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', exam_score: 56, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'es11', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', exam_score: 59, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 414 Exam Scores (Prof. Chukwuma Akpan)
-    { id: 'es12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', exam_score: 58, session: '2025/26', uploaded_at: new Date().toISOString() }
-  ],
-  ca_scores: [
-    // COS 101 CA Scores
-    { id: 'ca1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 21, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca2', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 22, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca3', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 20, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 201 CA Scores (Dr. Ngozi Eze)
-    { id: 'ca4', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 22, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca5', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 25, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca6', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 24, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 202 CA Scores (Dr. Babatunde Fashola)
-    { id: 'ca7', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 23, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca8', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 24, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca9', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 22, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 343 CA Scores (Dr. Ifeanyi Ugwu)
-    { id: 'ca10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 24, session: '2025/26', uploaded_at: new Date().toISOString() },
-    { id: 'ca11', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 26, session: '2025/26', uploaded_at: new Date().toISOString() },
-
-    // COS 414 CA Scores (Prof. Chukwuma Akpan)
-    { id: 'ca12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', ca_score: 25, session: '2025/26', uploaded_at: new Date().toISOString() }
-  ],
+  exam_scores: [],
+  ca_scores: [],
   final_results: [
-    // ── COS 101 Results (Approved) ──────────────────────────────────
+    // ── 100L Student: Adaeze Nwosu (2025/100001) ──────────────────────
     {
-      id: 'fr1',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      ca_score: 21,
-      exam_score: 52,
-      total_score: 73,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
-    {
-      id: 'fr2',
+      id: 'fr_100_1',
       student_id: 'b1000001-0000-0000-0000-000000000001',
       course_id: 'c1010000-0000-0000-0000-000000000101',
       ca_score: 22,
@@ -295,34 +257,24 @@ const initialSeedData = {
       status: 'approved',
       session: '2025/26'
     },
-    {
-      id: 'fr3',
-      student_id: 'b1000002-0000-0000-0000-000000000002',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      ca_score: 20,
-      exam_score: 45,
-      total_score: 65,
-      grade: 'B',
-      grade_point: 4.0,
-      status: 'approved',
-      session: '2025/26'
-    },
 
-    // ── COS 201 Results (Approved) ──────────────────────────────────
+    // ── 200L Student: Ikenna Okafor (2024/200001) ─────────────────────
+    // 100L Previous Session (2024/25)
     {
-      id: 'fr4',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c2010000-0000-0000-0000-000000000201',
-      ca_score: 22,
-      exam_score: 54,
+      id: 'fr_200_100L',
+      student_id: 'b2000001-0000-0000-0000-000000000001',
+      course_id: 'c1010000-0000-0000-0000-000000000101',
+      ca_score: 24,
+      exam_score: 52,
       total_score: 76,
       grade: 'A',
       grade_point: 5.0,
       status: 'approved',
-      session: '2025/26'
+      session: '2024/25'
     },
+    // 200L Current Session (2025/26)
     {
-      id: 'fr5',
+      id: 'fr_200_201',
       student_id: 'b2000001-0000-0000-0000-000000000001',
       course_id: 'c2010000-0000-0000-0000-000000000201',
       ca_score: 25,
@@ -334,33 +286,7 @@ const initialSeedData = {
       session: '2025/26'
     },
     {
-      id: 'fr6',
-      student_id: 'b2000002-0000-0000-0000-000000000002',
-      course_id: 'c2010000-0000-0000-0000-000000000201',
-      ca_score: 24,
-      exam_score: 58,
-      total_score: 82,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
-
-    // ── COS 202 Results (Approved) ──────────────────────────────────
-    {
-      id: 'fr7',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c2020000-0000-0000-0000-000000000202',
-      ca_score: 23,
-      exam_score: 51,
-      total_score: 74,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
-    {
-      id: 'fr8',
+      id: 'fr_200_202',
       student_id: 'b2000001-0000-0000-0000-000000000001',
       course_id: 'c2020000-0000-0000-0000-000000000202',
       ca_score: 24,
@@ -371,20 +297,121 @@ const initialSeedData = {
       status: 'approved',
       session: '2025/26'
     },
+
+    // ── 300L Student: Ngozi Onyekachi (2023/300001) ───────────────────
+    // 100L Session (2023/24)
     {
-      id: 'fr9',
-      student_id: 'b2000002-0000-0000-0000-000000000002',
-      course_id: 'c2020000-0000-0000-0000-000000000202',
+      id: 'fr_300_100L',
+      student_id: 'b3000001-0000-0000-0000-000000000001',
+      course_id: 'c1010000-0000-0000-0000-000000000101',
+      ca_score: 23,
+      exam_score: 57,
+      total_score: 80,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2023/24'
+    },
+    // 200L Session (2024/25)
+    {
+      id: 'fr_300_201',
+      student_id: 'b3000001-0000-0000-0000-000000000001',
+      course_id: 'c2010000-0000-0000-0000-000000000201',
       ca_score: 22,
-      exam_score: 53,
-      total_score: 75,
+      exam_score: 56,
+      total_score: 78,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2024/25'
+    },
+    {
+      id: 'fr_300_202',
+      student_id: 'b3000001-0000-0000-0000-000000000001',
+      course_id: 'c2020000-0000-0000-0000-000000000202',
+      ca_score: 25,
+      exam_score: 55,
+      total_score: 80,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2024/25'
+    },
+    // 300L Session (2025/26)
+    {
+      id: 'fr_300_303',
+      student_id: 'b3000001-0000-0000-0000-000000000001',
+      course_id: 'c3030000-0000-0000-0000-000000000303',
+      ca_score: 26,
+      exam_score: 58,
+      total_score: 84,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2025/26'
+    },
+    {
+      id: 'fr_300_343',
+      student_id: 'b3000001-0000-0000-0000-000000000001',
+      course_id: 'c3430000-0000-0000-0000-000000000343',
+      ca_score: 24,
+      exam_score: 54,
+      total_score: 78,
       grade: 'A',
       grade_point: 5.0,
       status: 'approved',
       session: '2025/26'
     },
 
-    // ── COS 343 Results (Approved) ──────────────────────────────────
+    // ── 400L Student: Chukwuebuka Obi (2022/234567) ───────────────────
+    {
+      id: 'fr1',
+      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
+      course_id: 'c1010000-0000-0000-0000-000000000101',
+      ca_score: 21,
+      exam_score: 52,
+      total_score: 73,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2022/23'
+    },
+    {
+      id: 'fr4',
+      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
+      course_id: 'c2010000-0000-0000-0000-000000000201',
+      ca_score: 22,
+      exam_score: 54,
+      total_score: 76,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2023/24'
+    },
+    {
+      id: 'fr7',
+      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
+      course_id: 'c2020000-0000-0000-0000-000000000202',
+      ca_score: 23,
+      exam_score: 51,
+      total_score: 74,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2023/24'
+    },
+    {
+      id: 'fr10a',
+      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
+      course_id: 'c3030000-0000-0000-0000-000000000303',
+      ca_score: 25,
+      exam_score: 55,
+      total_score: 80,
+      grade: 'A',
+      grade_point: 5.0,
+      status: 'approved',
+      session: '2024/25'
+    },
     {
       id: 'fr10',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
@@ -395,22 +422,8 @@ const initialSeedData = {
       grade: 'A',
       grade_point: 5.0,
       status: 'approved',
-      session: '2025/26'
+      session: '2024/25'
     },
-    {
-      id: 'fr11',
-      student_id: 'b2000001-0000-0000-0000-000000000001',
-      course_id: 'c3430000-0000-0000-0000-000000000343',
-      ca_score: 26,
-      exam_score: 59,
-      total_score: 85,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
-
-    // ── COS 414 Results (Approved) ──────────────────────────────────
     {
       id: 'fr12',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
@@ -487,30 +500,39 @@ const initialSeedData = {
   ],
   cgpa_records: [
     {
-      id: 'cg1',
+      id: 'cg_100',
+      student_id: 'b1000001-0000-0000-0000-000000000001',
+      total_credit_units: 2,
+      total_quality_points: 10.0,
+      cgpa: 5.0,
+      classification: 'First Class Honours',
+      last_updated: new Date().toISOString()
+    },
+    {
+      id: 'cg_200',
+      student_id: 'b2000001-0000-0000-0000-000000000001',
+      total_credit_units: 6,
+      total_quality_points: 30.0,
+      cgpa: 5.0,
+      classification: 'First Class Honours',
+      last_updated: new Date().toISOString()
+    },
+    {
+      id: 'cg_300',
+      student_id: 'b3000001-0000-0000-0000-000000000001',
+      total_credit_units: 12,
+      total_quality_points: 60.0,
+      cgpa: 5.0,
+      classification: 'First Class Honours',
+      last_updated: new Date().toISOString()
+    },
+    {
+      id: 'cg_400',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      total_credit_units: 3,
-      total_quality_points: 15.0,
+      total_credit_units: 15,
+      total_quality_points: 75.0,
       cgpa: 5.0,
       classification: 'First Class Honours',
-      last_updated: new Date().toISOString()
-    },
-    {
-      id: 'cg2',
-      student_id: 'b2222222-bbbb-bbbb-bbbb-bbbbbbbbbbb2',
-      total_credit_units: 3,
-      total_quality_points: 15.0,
-      cgpa: 5.0,
-      classification: 'First Class Honours',
-      last_updated: new Date().toISOString()
-    },
-    {
-      id: 'cg3',
-      student_id: 'b3333333-bbbb-bbbb-bbbb-bbbbbbbbbbb3',
-      total_credit_units: 3,
-      total_quality_points: 12.0,
-      cgpa: 4.0,
-      classification: 'Second Class Honours (Upper Division)',
       last_updated: new Date().toISOString()
     }
   ],
@@ -1291,10 +1313,13 @@ export async function recomputeStudentCGPA(studentId) {
 }
 
 // ----------------- COMPLAINTS -----------------
-export async function getComplaints(studentId) {
+export async function getComplaints(studentId, regNumber = null) {
   const local = getLocalData()
   if (studentId) {
-    return local.complaints.filter(c => c.student_id === studentId)
+    return (local.complaints || []).filter(c => 
+      c.student_id === studentId || 
+      (regNumber && c.student_reg_number && normalizeRegNumber(c.student_reg_number) === normalizeRegNumber(regNumber))
+    )
   }
   return local.complaints || []
 }
@@ -1302,12 +1327,14 @@ export async function getComplaints(studentId) {
 export async function createComplaint(studentId, courseId, complaintText, studentName = null, studentRegNumber = null) {
   const local = getLocalData()
   const student = (local.students || []).find(s => s.id === studentId || (studentRegNumber && normalizeRegNumber(s.reg_number) === normalizeRegNumber(studentRegNumber)))
+  const course = (local.courses || []).find(c => c.id === courseId)
   const entry = {
     id: generateUUID(),
     student_id: studentId,
     student_name: studentName || student?.full_name || 'Candidate',
     student_reg_number: studentRegNumber || student?.reg_number || '',
     course_id: courseId,
+    course_code: course?.code || '',
     complaint_text: complaintText.trim(),
     status: 'pending',
     exam_officer_response: null,

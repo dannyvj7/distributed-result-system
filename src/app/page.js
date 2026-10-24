@@ -231,12 +231,12 @@ export default function StaffLoginPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleAutofill('lecturer.ugwu@institution.edu.ng', 'Dr. Ifeanyi Ugwu (COS 343)')}
+                      onClick={() => handleAutofill('lecturer.ugwu@institution.edu.ng', 'Dr. Ifeanyi Ugwu (COS 303 / COS 343)')}
                       className="w-full p-2 bg-white border border-slate-200 hover:border-amber-400 rounded-lg text-left transition flex items-center justify-between"
                     >
                       <div>
                         <span className="font-semibold text-slate-800 block">Dr. Ifeanyi Ugwu</span>
-                        <span className="text-[10px] text-slate-500">COS 343 • 1st Sem • 300L</span>
+                        <span className="text-[10px] text-slate-500">COS 303 & COS 343 • 1st Sem • 300L</span>
                       </div>
                       <span className="text-[10px] bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">Auto-fill</span>
                     </button>

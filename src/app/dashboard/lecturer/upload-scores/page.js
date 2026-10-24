@@ -33,7 +33,7 @@ export default function UploadExamScoresPage() {
           (user?.email === 'lecturer.csc@institution.edu.ng' && c.code === 'COS 101') ||
           (user?.email === 'lecturer.eze@institution.edu.ng' && c.code === 'COS 201') ||
           (user?.email === 'lecturer.fashola@institution.edu.ng' && c.code === 'COS 202') ||
-          (user?.email === 'lecturer.ugwu@institution.edu.ng' && c.code === 'COS 343') ||
+          (user?.email === 'lecturer.ugwu@institution.edu.ng' && (c.code === 'COS 343' || c.code === 'COS 303')) ||
           (user?.email === 'lecturer.akpan@institution.edu.ng' && c.code === 'COS 414')
         )
         if (myCourses.length === 0 && user?.role === 'lecturer') {

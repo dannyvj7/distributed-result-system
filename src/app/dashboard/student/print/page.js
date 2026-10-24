@@ -5,7 +5,7 @@ import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
-import { getStudents, getCourses, getFinalResults, getDepartments, getCgpaRecord } from '../../../../lib/db'
+import { getStudents, getCourses, getFinalResults, getDepartments, getCgpaRecord, recomputeStudentCGPA } from '../../../../lib/db'
 import { normalizeRegNumber } from '../../../../lib/grading'
 import { Printer, Download, School, ShieldCheck, CheckCircle2 } from 'lucide-react'
 
@@ -44,7 +44,10 @@ export default function StudentPrintResultPage() {
           )
           setResults(studentResults)
 
-          const rec = await getCgpaRecord(activeStudent.id)
+          let rec = await getCgpaRecord(activeStudent.id)
+          if (!rec && studentResults.length > 0) {
+            rec = await recomputeStudentCGPA(activeStudent.id)
+          }
           setCgpaRecord(rec)
         }
       } finally {

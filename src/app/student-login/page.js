@@ -111,6 +111,14 @@ export default function StudentLoginPage() {
               </button>
               <button
                 type="button"
+                onClick={() => fillDemoStudent('2023/300001')}
+                className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition flex items-center justify-between"
+              >
+                <span>Ngozi Onyekachi (300L)</span>
+                <span className="font-mono text-[11px] text-slate-600">2023/300001</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => fillDemoStudent('2024/200001')}
                 className="w-full py-2 px-3 text-xs font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition flex items-center justify-between"
               >

@@ -215,7 +215,7 @@ export default function HodComplaintsDeskPage() {
             const student = students.find(s => s.id === cmp.student_id)
             const studentName = cmp.student_name || student?.full_name || 'Candidate'
             const studentReg = cmp.student_reg_number || student?.reg_number || '2022/234567'
-            const course = courses.find(c => c.id === cmp.course_id)
+            const course = courses.find(c => c.id === cmp.course_id || (cmp.course_code && c.code === cmp.course_code))
             const isAwaiting = cmp.status === 'awaiting_hod_approval'
             const isHodApproved = cmp.status === 'hod_approved'
             const isResolved = cmp.status === 'resolved'

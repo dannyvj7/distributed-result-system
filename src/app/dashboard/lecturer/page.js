@@ -53,7 +53,7 @@ export default function LecturerDashboardPage() {
         (user?.email === 'lecturer.csc@institution.edu.ng' && c.code === 'COS 101') ||
         (user?.email === 'lecturer.eze@institution.edu.ng' && c.code === 'COS 201') ||
         (user?.email === 'lecturer.fashola@institution.edu.ng' && c.code === 'COS 202') ||
-        (user?.email === 'lecturer.ugwu@institution.edu.ng' && c.code === 'COS 343') ||
+        (user?.email === 'lecturer.ugwu@institution.edu.ng' && (c.code === 'COS 343' || c.code === 'COS 303')) ||
         (user?.email === 'lecturer.akpan@institution.edu.ng' && c.code === 'COS 414')
       )
       if (myCourses.length === 0 && user?.role === 'lecturer') {
@@ -63,7 +63,10 @@ export default function LecturerDashboardPage() {
 
       // Filter complaints to ONLY those belonging to courses allocated to this lecturer
       const myCourseIds = myCourses.map(c => c.id)
-      const myComplaints = allComplaints.filter(c => myCourseIds.includes(c.course_id))
+      const myComplaints = allComplaints.filter(c => 
+        myCourseIds.includes(c.course_id) ||
+        myCourses.some(mc => mc.id === c.course_id || (c.course_code && mc.code.replace(/\s+/g, '') === c.course_code.replace(/\s+/g, '')))
+      )
 
       setCourses(myCourses)
       setEnrollments(allEnrolls)
@@ -224,7 +227,7 @@ export default function LecturerDashboardPage() {
       </div>
 
       {/* Dispute Referrals & Physical Script Audit Desk */}
-      {complaints.filter(c => courses.some(mc => mc.id === c.course_id) && ['referred_to_lecturer', 'awaiting_hod_approval', 'hod_approved'].includes(c.status)).length > 0 && (
+      {complaints.length > 0 && (
         <div className="bg-white rounded-xl border border-amber-200 shadow-xs overflow-hidden mb-8">
           <div className="p-5 border-b border-amber-100 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -239,17 +242,19 @@ export default function LecturerDashboardPage() {
               </div>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 self-start sm:self-auto">
-              Action Required
+              {complaints.filter(c => c.status === 'referred_to_lecturer' || c.status === 'pending').length > 0 ? 'Action Required' : 'Audit History'}
             </span>
           </div>
 
           <div className="p-5 divide-y divide-slate-100">
-            {complaints.filter(c => courses.some(mc => mc.id === c.course_id) && ['referred_to_lecturer', 'awaiting_hod_approval', 'hod_approved'].includes(c.status)).map(cmp => {
+            {complaints.map(cmp => {
               const student = students.find(s => s.id === cmp.student_id)
               const course = courses.find(c => c.id === cmp.course_id)
               const isReferred = cmp.status === 'referred_to_lecturer'
+              const isPending = cmp.status === 'pending'
               const isAwaitingHod = cmp.status === 'awaiting_hod_approval'
               const isHodApproved = cmp.status === 'hod_approved'
+              const isResolved = cmp.status === 'resolved'
 
               return (
                 <div key={cmp.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -260,7 +265,7 @@ export default function LecturerDashboardPage() {
                         {cmp.student_reg_number || student?.reg_number}
                       </span>
                       <span className="text-xs font-semibold text-slate-600">
-                        &bull; Course: <strong className="text-slate-900">{course?.code || 'COS 101'}</strong>
+                        &bull; Course: <strong className="text-slate-900">{course?.code || 'Course'}</strong>
                       </span>
                     </div>
                     <p className="text-xs text-slate-700 mt-1.5 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
@@ -276,7 +281,7 @@ export default function LecturerDashboardPage() {
                   </div>
 
                   <div className="shrink-0 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                    {isReferred ? (
+                    {isReferred || isPending ? (
                       <button
                         onClick={() => handleOpenAuditModal(cmp)}
                         className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-600/20 transition flex items-center gap-1.5"
@@ -293,13 +298,22 @@ export default function LecturerDashboardPage() {
                           Ref: {cmp.hod_memo_ref || 'UNN/CSC/REC/2026/014'}
                         </div>
                       </div>
-                    ) : (
+                    ) : isHodApproved ? (
                       <div className="text-right">
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3" /> HOD Sanctioned
                         </span>
                         <div className="text-[10px] text-emerald-600 font-medium mt-0.5">
                           Ready for Senate update
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          <CheckCircle2 className="w-3 h-3" /> Senate Rectified
+                        </span>
+                        <div className="text-[10px] text-blue-600 font-medium mt-0.5">
+                          Master Broadsheet Updated
                         </div>
                       </div>
                     )}
@@ -451,40 +465,32 @@ export default function LecturerDashboardPage() {
                       <td className="py-4 px-5">{statusBadge}</td>
 
                       <td className="py-4 px-5 text-right">
-                        {isLocked ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 px-3 py-1.5 rounded-xl border border-slate-200">
-                            <Lock className="w-3.5 h-3.5" />
-                            {isDistributed ? 'Distributed' : isApproved ? 'HOD Approved' : 'Submitted'}
-                          </span>
-                        ) : (hasDraft || (hasExams && hasCas)) ? (
+                        <div className="flex items-center justify-end gap-2 flex-wrap">
+                          {!hasExams && (
+                            <Link
+                              href={`/dashboard/lecturer/upload-scores?courseId=${course.id}`}
+                              className="px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-blue-50 border border-blue-200 rounded-lg transition"
+                            >
+                              Upload Exam
+                            </Link>
+                          )}
+                          {!hasCas && (
+                            <Link
+                              href={`/dashboard/lecturer/upload-ca?courseId=${course.id}`}
+                              className="px-2.5 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 border border-emerald-200 rounded-lg transition"
+                            >
+                              Upload CA
+                            </Link>
+                          )}
                           <button
                             onClick={() => handleOpenSignModal(course)}
                             disabled={submitting === course.id}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1E3A8A] hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-900/20 transition disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#1E3A8A] hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-900/20 transition disabled:opacity-50"
                           >
                             <PenTool className="w-3.5 h-3.5" />
-                            Review & Sign Broadsheet
+                            {isLocked ? 'Review & Sign' : 'Review & Sign Broadsheet'}
                           </button>
-                        ) : (
-                          <div className="flex items-center justify-end gap-2">
-                            {!hasExams && (
-                              <Link
-                                href={`/dashboard/lecturer/upload-scores?courseId=${course.id}`}
-                                className="px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-blue-50 border border-blue-200 rounded-lg transition"
-                              >
-                                Upload Exam
-                              </Link>
-                            )}
-                            {hasExams && !hasCas && (
-                              <Link
-                                href={`/dashboard/lecturer/upload-ca?courseId=${course.id}`}
-                                className="px-2.5 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 border border-emerald-200 rounded-lg transition"
-                              >
-                                Upload CA
-                              </Link>
-                            )}
-                          </div>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   )

@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
-import { getComplaints, resolveComplaint, referComplaintToLecturer, getStudents, getCourses } from '../../../../lib/db'
+import { getComplaints, resolveComplaint, referComplaintToLecturer, getStudents, getCourses, getUsers } from '../../../../lib/db'
 import { AlertCircle, CheckCircle2, MessageSquare, Send, CheckCircle, Clock, ArrowRight, FileCheck, ShieldCheck, UserCheck, FileText, X } from 'lucide-react'
 
 export default function ExamOfficerComplaintsPage() {
   const [complaints, setComplaints] = useState([])
   const [students, setStudents] = useState([])
   const [courses, setCourses] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('ALL')
 
@@ -26,14 +27,16 @@ export default function ExamOfficerComplaintsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [cmps, studs, crs] = await Promise.all([
+      const [cmps, studs, crs, usrs] = await Promise.all([
         getComplaints(),
         getStudents(),
-        getCourses()
+        getCourses(),
+        getUsers()
       ])
       setComplaints(cmps)
       setStudents(studs)
       setCourses(crs)
+      setUsers(usrs)
     } finally {
       setLoading(false)
     }
@@ -335,12 +338,23 @@ export default function ExamOfficerComplaintsPage() {
             {/* Step 1: Referral to Lecturer */}
             <div className="border border-slate-200 rounded-xl p-4 mb-4 bg-white">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-bold">1</span>
-                  Referral to Course Lecturer for Script Audit
-                </h4>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full bg-blue-100 text-primary flex items-center justify-center text-[10px] font-bold">1</span>
+                    Referral to Course Lecturer for Script Audit
+                  </h4>
+                  {(() => {
+                    const crs = courses.find(c => c.id === activeComplaint.course_id)
+                    const lct = users.find(u => u.id === crs?.lecturer_id)
+                    return lct ? (
+                      <p className="text-[11px] text-blue-800 font-medium mt-0.5 ml-7">
+                        Assigned Lecturer: <strong className="text-slate-900">{lct.full_name}</strong> ({lct.email})
+                      </p>
+                    ) : null
+                  })()}
+                </div>
                 {activeComplaint.status !== 'pending' && (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">
                     Dispatched
                   </span>
                 )}

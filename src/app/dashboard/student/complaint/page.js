@@ -32,7 +32,7 @@ export default function StudentComplaintPage() {
         if (crs.length > 0) setSelectedCourseId(crs[0].id)
 
         if (activeStudent) {
-          const studentComplaints = await getComplaints(activeStudent.id)
+          const studentComplaints = await getComplaints(activeStudent.id, activeStudent.reg_number)
           setComplaints(studentComplaints)
         }
       } finally {
@@ -54,7 +54,7 @@ export default function StudentComplaintPage() {
         text: 'Complaint submitted successfully! It has been forwarded to the Examination Office for investigation.'
       })
       setComplaintText('')
-      const updated = await getComplaints(student.id)
+      const updated = await getComplaints(student.id, student.reg_number)
       setComplaints(updated)
     } catch (err) {
       setStatusMessage({ type: 'error', text: 'Failed to submit complaint.' })

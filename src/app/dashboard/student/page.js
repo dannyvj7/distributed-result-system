@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import DashboardLayout from '../../../components/DashboardLayout'
 import { useAuth } from '../../../lib/authContext'
-import { getStudents, getCourses, getFinalResults, getCgpaRecord, getDepartments, getComplaints } from '../../../lib/db'
+import { getStudents, getCourses, getFinalResults, getCgpaRecord, getDepartments, getComplaints, recomputeStudentCGPA } from '../../../lib/db'
 import { normalizeRegNumber } from '../../../lib/grading'
 import {
   GraduationCap,
@@ -55,7 +55,10 @@ export default function StudentDashboardPage() {
           )
           setResults(studentResults)
 
-          const cgpa = await getCgpaRecord(activeStudent.id)
+          let cgpa = await getCgpaRecord(activeStudent.id)
+          if (!cgpa && studentResults.length > 0) {
+            cgpa = await recomputeStudentCGPA(activeStudent.id)
+          }
           setCgpaRecord(cgpa)
 
           const cmps = await getComplaints(activeStudent.id)

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
-import { getStudents, getCourses, getFinalResults, getCgpaRecord } from '../../../../lib/db'
+import { getStudents, getCourses, getFinalResults, getCgpaRecord, recomputeStudentCGPA } from '../../../../lib/db'
 import { normalizeRegNumber } from '../../../../lib/grading'
 import { Award, BookOpen, CheckCircle, TrendingUp, HelpCircle } from 'lucide-react'
 
@@ -32,13 +32,16 @@ export default function StudentCgpaPage() {
         setCourses(crs)
 
         if (activeStudent) {
-          const rec = await getCgpaRecord(activeStudent.id)
-          setCgpaRecord(rec)
-
           const studentResults = finals.filter(
             r => r.student_id === activeStudent.id && (r.status === 'approved' || r.status === 'distributed')
           )
           setResults(studentResults)
+
+          let rec = await getCgpaRecord(activeStudent.id)
+          if (!rec && studentResults.length > 0) {
+            rec = await recomputeStudentCGPA(activeStudent.id)
+          }
+          setCgpaRecord(rec)
         }
       } finally {
         setLoading(false)
