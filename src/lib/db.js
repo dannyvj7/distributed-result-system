@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v19'
+const STORAGE_KEY = 'dist_results_system_data_v20'
 
 const initialSeedData = {
   departments: [
@@ -180,16 +180,6 @@ const initialSeedData = {
       lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa22' // Dr. Babatunde Fashola
     },
     {
-      id: 'c3030000-0000-0000-0000-000000000303',
-      code: 'COS 303',
-      title: 'Operating Systems & System Programming',
-      credit_units: 3,
-      semester: 'first',
-      session: '2025/26',
-      department_id: 'd1111111-1111-1111-1111-111111111111',
-      lecturer_id: 'a4444444-aaaa-aaaa-aaaa-aaaaaaaaaa31' // Dr. Ifeanyi Ugwu
-    },
-    {
       id: 'c3430000-0000-0000-0000-000000000343',
       code: 'COS 343',
       title: 'Database Design & Management',
@@ -229,10 +219,6 @@ const initialSeedData = {
     { id: 'e8', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
     { id: 'e9', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
     { id: 'e9b', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2024/25', semester: 'second' },
-
-    // ── COS 303 Enrollments (300L) ───────────────────────────────────
-    { id: 'e10a', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3030000-0000-0000-0000-000000000303', session: '2024/25', semester: 'first' },
-    { id: 'e11a', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3030000-0000-0000-0000-000000000303', session: '2025/26', semester: 'first' },
 
     // ── COS 343 Enrollments (300L) ───────────────────────────────────
     { id: 'e10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2024/25', semester: 'first' },
@@ -339,18 +325,6 @@ const initialSeedData = {
     },
     // 300L Session (2025/26)
     {
-      id: 'fr_300_303',
-      student_id: 'b3000001-0000-0000-0000-000000000001',
-      course_id: 'c3030000-0000-0000-0000-000000000303',
-      ca_score: 26,
-      exam_score: 58,
-      total_score: 84,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
-    {
       id: 'fr_300_343',
       student_id: 'b3000001-0000-0000-0000-000000000001',
       course_id: 'c3430000-0000-0000-0000-000000000343',
@@ -399,18 +373,6 @@ const initialSeedData = {
       grade_point: 5.0,
       status: 'approved',
       session: '2023/24'
-    },
-    {
-      id: 'fr10a',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c3030000-0000-0000-0000-000000000303',
-      ca_score: 25,
-      exam_score: 55,
-      total_score: 80,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2024/25'
     },
     {
       id: 'fr10',
@@ -520,8 +482,8 @@ const initialSeedData = {
     {
       id: 'cg_300',
       student_id: 'b3000001-0000-0000-0000-000000000001',
-      total_credit_units: 12,
-      total_quality_points: 60.0,
+      total_credit_units: 9,
+      total_quality_points: 45.0,
       cgpa: 5.0,
       classification: 'First Class Honours',
       last_updated: new Date().toISOString()
@@ -529,8 +491,8 @@ const initialSeedData = {
     {
       id: 'cg_400',
       student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      total_credit_units: 15,
-      total_quality_points: 75.0,
+      total_credit_units: 12,
+      total_quality_points: 60.0,
       cgpa: 5.0,
       classification: 'First Class Honours',
       last_updated: new Date().toISOString()
