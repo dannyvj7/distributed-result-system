@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v22'
+const STORAGE_KEY = 'dist_results_system_data_v23'
 
 const initialSeedData = {
   departments: [
@@ -142,7 +142,6 @@ const initialSeedData = {
     { id: 'b3000001-0000-0000-0000-000000000001', reg_number: '2023/300001', full_name: 'Ngozi Onyekachi', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
     { id: 'b3000002-0000-0000-0000-000000000002', reg_number: '2023/300002', full_name: 'Tunde Bakare', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
     { id: 'b3000003-0000-0000-0000-000000000003', reg_number: '2023/300003', full_name: 'Chinaza Ebere', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
-    { id: 'b3000004-0000-0000-0000-000000000004', reg_number: '2023/300004', full_name: 'Emeka Umeh', department_id: 'd2222222-2222-2222-2222-222222222222', level: 300, session: '2025/26' },
 
     // ── Level 400 (Admitted 2022) ──────────────────────────────────────────
     { id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', reg_number: '2022/234567', full_name: 'Chukwuebuka Obi', department_id: 'd1111111-1111-1111-1111-111111111111', level: 400, session: '2025/26' },
@@ -235,11 +234,11 @@ const initialSeedData = {
     { id: 'e9_crb2', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' }, // CRB
     { id: 'e9b', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2024/25', semester: 'second' },
 
-    // ── COS 343 Enrollments (300L - COS, MTH) ────────────────────────
+    // ── COS 343 Enrollments (300L - Strictly Computer Science) ────────
     { id: 'e10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2024/25', semester: 'first' },
     { id: 'e11', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // COS
     { id: 'e11_302', student_id: 'b3000002-0000-0000-0000-000000000002', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // COS
-    { id: 'e11_mth', student_id: 'b3000004-0000-0000-0000-000000000004', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // MTH
+    { id: 'e11_303', student_id: 'b3000003-0000-0000-0000-000000000003', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // COS
 
     // ── COS 414 Enrollments (400L) ───────────────────────────────────
     { id: 'e12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', session: '2025/26', semester: 'second' },
@@ -303,12 +302,13 @@ const initialSeedData = {
     { id: 'fr_200_crb2_201', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 19, exam_score: 46, total_score: 65, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
     { id: 'fr_200_crb2_202', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 18, exam_score: 45, total_score: 63, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
 
-    // ── 300L Students: Ngozi Onyekachi (2023/300001) & Emeka Umeh (MTH) ──
+    // ── 300L Students: COS 343 Strictly Computer Science (2025/26) ────
     { id: 'fr_300_100L', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 23, exam_score: 57, total_score: 80, grade: 'A', grade_point: 5.0, status: 'approved', session: '2023/24' },
     { id: 'fr_300_201', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 22, exam_score: 56, total_score: 78, grade: 'A', grade_point: 5.0, status: 'approved', session: '2024/25' },
     { id: 'fr_300_202', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 25, exam_score: 55, total_score: 80, grade: 'A', grade_point: 5.0, status: 'approved', session: '2024/25' },
     { id: 'fr_300_343', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 24, exam_score: 54, total_score: 78, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
-    { id: 'fr_300_mth_343', student_id: 'b3000004-0000-0000-0000-000000000004', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 22, exam_score: 50, total_score: 72, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_300_bakare_343', student_id: 'b3000002-0000-0000-0000-000000000002', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 23, exam_score: 52, total_score: 75, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_300_ebere_343', student_id: 'b3000003-0000-0000-0000-000000000003', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 21, exam_score: 50, total_score: 71, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
 
     // ── 400L Student: Chukwuebuka Obi (2022/234567) ───────────────────
     { id: 'fr1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 21, exam_score: 52, total_score: 73, grade: 'A', grade_point: 5.0, status: 'approved', session: '2022/23' },
@@ -416,6 +416,14 @@ function getLocalData() {
     }
     const parsed = JSON.parse(raw)
     let modified = false
+
+    // Ensure no non-CS students are enrolled in COS 343
+    if (parsed.students && parsed.students.some(s => s.id === 'b3000004-0000-0000-0000-000000000004')) {
+      parsed.students = parsed.students.filter(s => s.id !== 'b3000004-0000-0000-0000-000000000004')
+      parsed.enrollments = (parsed.enrollments || []).filter(e => e.student_id !== 'b3000004-0000-0000-0000-000000000004')
+      parsed.final_results = (parsed.final_results || []).filter(f => f.student_id !== 'b3000004-0000-0000-0000-000000000004')
+      modified = true
+    }
 
     // Auto-repair missing students from initialSeedData
     if (!parsed.students) parsed.students = []
