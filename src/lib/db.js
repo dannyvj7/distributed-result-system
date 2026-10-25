@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { calculateGrade, calculateCGPA, normalizeRegNumber } from './grading'
 
-const STORAGE_KEY = 'dist_results_system_data_v20'
+const STORAGE_KEY = 'dist_results_system_data_v22'
 
 const initialSeedData = {
   departments: [
@@ -142,6 +142,7 @@ const initialSeedData = {
     { id: 'b3000001-0000-0000-0000-000000000001', reg_number: '2023/300001', full_name: 'Ngozi Onyekachi', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
     { id: 'b3000002-0000-0000-0000-000000000002', reg_number: '2023/300002', full_name: 'Tunde Bakare', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
     { id: 'b3000003-0000-0000-0000-000000000003', reg_number: '2023/300003', full_name: 'Chinaza Ebere', department_id: 'd1111111-1111-1111-1111-111111111111', level: 300, session: '2025/26' },
+    { id: 'b3000004-0000-0000-0000-000000000004', reg_number: '2023/300004', full_name: 'Emeka Umeh', department_id: 'd2222222-2222-2222-2222-222222222222', level: 300, session: '2025/26' },
 
     // ── Level 400 (Admitted 2022) ──────────────────────────────────────────
     { id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', reg_number: '2022/234567', full_name: 'Chukwuebuka Obi', department_id: 'd1111111-1111-1111-1111-111111111111', level: 400, session: '2025/26' },
@@ -201,203 +202,120 @@ const initialSeedData = {
     }
   ],
   enrollments: [
-    // ── COS 101 Enrollments (100L) ──────────────────────────────────
+    // ── COS 101 Enrollments (100L - All 5 Departments: COS, MTH, VTE, CRB, STA) ──
     { id: 'e1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2022/23', semester: 'first' },
-    { id: 'e2', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' },
-    { id: 'e3', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' },
+    { id: 'e2', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // COS
+    { id: 'e3', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // MTH
+    { id: 'e3_vte1', student_id: 'b1000003-0000-0000-0000-000000000003', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // VTE
+    { id: 'e3_crb1', student_id: 'b1000004-0000-0000-0000-000000000004', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // CRB
+    { id: 'e3_sta1', student_id: 'b1000005-0000-0000-0000-000000000005', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // STA
+    { id: 'e3_cos2', student_id: 'b1000006-0000-0000-0000-000000000006', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // COS
+    { id: 'e3_mth2', student_id: 'b1000007-0000-0000-0000-000000000007', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // MTH
+    { id: 'e3_vte2', student_id: 'b1000008-0000-0000-0000-000000000008', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // VTE
+    { id: 'e3_crb2', student_id: 'b1000009-0000-0000-0000-000000000009', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // CRB
+    { id: 'e3_sta2', student_id: 'b1000010-0000-0000-0000-000000000010', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2025/26', semester: 'first' }, // STA
     { id: 'e3b', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2024/25', semester: 'first' },
     { id: 'e3c', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', session: '2023/24', semester: 'first' },
 
-    // ── COS 201 Enrollments (200L) ───────────────────────────────────
+    // ── COS 201 Enrollments (200L - COS, VTE, CRB) ────────────────────
     { id: 'e4', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2023/24', semester: 'first' },
-    { id: 'e5', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' },
-    { id: 'e6', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' },
+    { id: 'e5', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' }, // COS
+    { id: 'e6', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' }, // COS
+    { id: 'e6_vte', student_id: 'b2000003-0000-0000-0000-000000000003', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' }, // VTE
+    { id: 'e6_crb1', student_id: 'b2000004-0000-0000-0000-000000000004', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' }, // CRB
+    { id: 'e6_crb2', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2025/26', semester: 'first' }, // CRB
     { id: 'e6b', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', session: '2024/25', semester: 'first' },
 
-    // ── COS 202 Enrollments (200L) ───────────────────────────────────
+    // ── COS 202 Enrollments (200L - COS, VTE, CRB) ────────────────────
     { id: 'e7', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2023/24', semester: 'second' },
-    { id: 'e8', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
-    { id: 'e9', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' },
+    { id: 'e8', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' }, // COS
+    { id: 'e9', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' }, // COS
+    { id: 'e9_vte', student_id: 'b2000003-0000-0000-0000-000000000003', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' }, // VTE
+    { id: 'e9_crb1', student_id: 'b2000004-0000-0000-0000-000000000004', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' }, // CRB
+    { id: 'e9_crb2', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2025/26', semester: 'second' }, // CRB
     { id: 'e9b', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', session: '2024/25', semester: 'second' },
 
-    // ── COS 343 Enrollments (300L) ───────────────────────────────────
+    // ── COS 343 Enrollments (300L - COS, MTH) ────────────────────────
     { id: 'e10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2024/25', semester: 'first' },
-    { id: 'e11', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' },
+    { id: 'e11', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // COS
+    { id: 'e11_302', student_id: 'b3000002-0000-0000-0000-000000000002', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // COS
+    { id: 'e11_mth', student_id: 'b3000004-0000-0000-0000-000000000004', course_id: 'c3430000-0000-0000-0000-000000000343', session: '2025/26', semester: 'first' }, // MTH
 
     // ── COS 414 Enrollments (400L) ───────────────────────────────────
-    { id: 'e12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', session: '2025/26', semester: 'second' }
+    { id: 'e12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', session: '2025/26', semester: 'second' },
+    { id: 'e13', student_id: 'b4000002-0000-0000-0000-000000000002', course_id: 'c4140000-0000-0000-0000-000000000414', session: '2025/26', semester: 'second' },
+    { id: 'e14', student_id: 'b4000003-0000-0000-0000-000000000003', course_id: 'c4140000-0000-0000-0000-000000000414', session: '2025/26', semester: 'second' }
   ],
-  exam_scores: [],
-  ca_scores: [],
+  exam_scores: [
+    // COS 101 Exam Scores
+    { id: 'es_101_1', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 58, session: '2025/26' },
+    { id: 'es_101_2', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 48, session: '2025/26' },
+    { id: 'es_101_3', student_id: 'b1000003-0000-0000-0000-000000000003', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 46, session: '2025/26' },
+    { id: 'es_101_4', student_id: 'b1000004-0000-0000-0000-000000000004', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 50, session: '2025/26' },
+    { id: 'es_101_5', student_id: 'b1000005-0000-0000-0000-000000000005', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 44, session: '2025/26' },
+    { id: 'es_101_6', student_id: 'b1000006-0000-0000-0000-000000000006', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 51, session: '2025/26' },
+    { id: 'es_101_7', student_id: 'b1000007-0000-0000-0000-000000000007', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 49, session: '2025/26' },
+    { id: 'es_101_8', student_id: 'b1000008-0000-0000-0000-000000000008', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 45, session: '2025/26' },
+    { id: 'es_101_9', student_id: 'b1000009-0000-0000-0000-000000000009', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 53, session: '2025/26' },
+    { id: 'es_101_10', student_id: 'b1000010-0000-0000-0000-000000000010', course_id: 'c1010000-0000-0000-0000-000000000101', exam_score: 47, session: '2025/26' }
+  ],
+  ca_scores: [
+    // COS 101 CA Scores
+    { id: 'ca_101_1', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 22, session: '2025/26' },
+    { id: 'ca_101_2', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 20, session: '2025/26' },
+    { id: 'ca_101_3', student_id: 'b1000003-0000-0000-0000-000000000003', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 19, session: '2025/26' },
+    { id: 'ca_101_4', student_id: 'b1000004-0000-0000-0000-000000000004', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 24, session: '2025/26' },
+    { id: 'ca_101_5', student_id: 'b1000005-0000-0000-0000-000000000005', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 18, session: '2025/26' },
+    { id: 'ca_101_6', student_id: 'b1000006-0000-0000-0000-000000000006', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 21, session: '2025/26' },
+    { id: 'ca_101_7', student_id: 'b1000007-0000-0000-0000-000000000007', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 23, session: '2025/26' },
+    { id: 'ca_101_8', student_id: 'b1000008-0000-0000-0000-000000000008', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 17, session: '2025/26' },
+    { id: 'ca_101_9', student_id: 'b1000009-0000-0000-0000-000000000009', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 22, session: '2025/26' },
+    { id: 'ca_101_10', student_id: 'b1000010-0000-0000-0000-000000000010', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 20, session: '2025/26' }
+  ],
   final_results: [
-    // ── 100L Student: Adaeze Nwosu (2025/100001) ──────────────────────
-    {
-      id: 'fr_100_1',
-      student_id: 'b1000001-0000-0000-0000-000000000001',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      ca_score: 22,
-      exam_score: 58,
-      total_score: 80,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
+    // ── 100L Students: COS 101 Across ALL 5 Departments (2025/26) ────────
+    { id: 'fr_100_1', student_id: 'b1000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 22, exam_score: 58, total_score: 80, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_2', student_id: 'b1000002-0000-0000-0000-000000000002', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 20, exam_score: 48, total_score: 68, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_3', student_id: 'b1000003-0000-0000-0000-000000000003', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 19, exam_score: 46, total_score: 65, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_4', student_id: 'b1000004-0000-0000-0000-000000000004', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 24, exam_score: 50, total_score: 74, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_5', student_id: 'b1000005-0000-0000-0000-000000000005', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 18, exam_score: 44, total_score: 62, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_6', student_id: 'b1000006-0000-0000-0000-000000000006', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 21, exam_score: 51, total_score: 72, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_7', student_id: 'b1000007-0000-0000-0000-000000000007', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 23, exam_score: 49, total_score: 72, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_8', student_id: 'b1000008-0000-0000-0000-000000000008', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 17, exam_score: 45, total_score: 62, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_9', student_id: 'b1000009-0000-0000-0000-000000000009', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 22, exam_score: 53, total_score: 75, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_100_10', student_id: 'b1000010-0000-0000-0000-000000000010', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 20, exam_score: 47, total_score: 67, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
 
-    // ── 200L Student: Ikenna Okafor (2024/200001) ─────────────────────
-    // 100L Previous Session (2024/25)
-    {
-      id: 'fr_200_100L',
-      student_id: 'b2000001-0000-0000-0000-000000000001',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      ca_score: 24,
-      exam_score: 52,
-      total_score: 76,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2024/25'
-    },
-    // 200L Current Session (2025/26)
-    {
-      id: 'fr_200_201',
-      student_id: 'b2000001-0000-0000-0000-000000000001',
-      course_id: 'c2010000-0000-0000-0000-000000000201',
-      ca_score: 25,
-      exam_score: 60,
-      total_score: 85,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
-    {
-      id: 'fr_200_202',
-      student_id: 'b2000001-0000-0000-0000-000000000001',
-      course_id: 'c2020000-0000-0000-0000-000000000202',
-      ca_score: 24,
-      exam_score: 55,
-      total_score: 79,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
+    // ── 200L Students: COS 201 & COS 202 Across COS, VTE, CRB ─────────
+    // Ikenna Okafor (COS)
+    { id: 'fr_200_100L', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 24, exam_score: 52, total_score: 76, grade: 'A', grade_point: 5.0, status: 'approved', session: '2024/25' },
+    { id: 'fr_200_201', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 25, exam_score: 60, total_score: 85, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_200_202', student_id: 'b2000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 24, exam_score: 55, total_score: 79, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    // Cynthia Kalu (COS)
+    { id: 'fr_200_kalu_201', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 21, exam_score: 52, total_score: 73, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_200_kalu_202', student_id: 'b2000002-0000-0000-0000-000000000002', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 22, exam_score: 50, total_score: 72, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    // Mubarak Garba (VTE)
+    { id: 'fr_200_vte_201', student_id: 'b2000003-0000-0000-0000-000000000003', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 20, exam_score: 48, total_score: 68, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_200_vte_202', student_id: 'b2000003-0000-0000-0000-000000000003', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 19, exam_score: 47, total_score: 66, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    // Chisom Anieke (CRB)
+    { id: 'fr_200_crb1_201', student_id: 'b2000004-0000-0000-0000-000000000004', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 22, exam_score: 49, total_score: 71, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_200_crb1_202', student_id: 'b2000004-0000-0000-0000-000000000004', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 23, exam_score: 52, total_score: 75, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    // David Alabi (CRB)
+    { id: 'fr_200_crb2_201', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 19, exam_score: 46, total_score: 65, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_200_crb2_202', student_id: 'b2000005-0000-0000-0000-000000000005', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 18, exam_score: 45, total_score: 63, grade: 'B', grade_point: 4.0, status: 'approved', session: '2025/26' },
 
-    // ── 300L Student: Ngozi Onyekachi (2023/300001) ───────────────────
-    // 100L Session (2023/24)
-    {
-      id: 'fr_300_100L',
-      student_id: 'b3000001-0000-0000-0000-000000000001',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      ca_score: 23,
-      exam_score: 57,
-      total_score: 80,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2023/24'
-    },
-    // 200L Session (2024/25)
-    {
-      id: 'fr_300_201',
-      student_id: 'b3000001-0000-0000-0000-000000000001',
-      course_id: 'c2010000-0000-0000-0000-000000000201',
-      ca_score: 22,
-      exam_score: 56,
-      total_score: 78,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2024/25'
-    },
-    {
-      id: 'fr_300_202',
-      student_id: 'b3000001-0000-0000-0000-000000000001',
-      course_id: 'c2020000-0000-0000-0000-000000000202',
-      ca_score: 25,
-      exam_score: 55,
-      total_score: 80,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2024/25'
-    },
-    // 300L Session (2025/26)
-    {
-      id: 'fr_300_343',
-      student_id: 'b3000001-0000-0000-0000-000000000001',
-      course_id: 'c3430000-0000-0000-0000-000000000343',
-      ca_score: 24,
-      exam_score: 54,
-      total_score: 78,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    },
+    // ── 300L Students: Ngozi Onyekachi (2023/300001) & Emeka Umeh (MTH) ──
+    { id: 'fr_300_100L', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 23, exam_score: 57, total_score: 80, grade: 'A', grade_point: 5.0, status: 'approved', session: '2023/24' },
+    { id: 'fr_300_201', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 22, exam_score: 56, total_score: 78, grade: 'A', grade_point: 5.0, status: 'approved', session: '2024/25' },
+    { id: 'fr_300_202', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 25, exam_score: 55, total_score: 80, grade: 'A', grade_point: 5.0, status: 'approved', session: '2024/25' },
+    { id: 'fr_300_343', student_id: 'b3000001-0000-0000-0000-000000000001', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 24, exam_score: 54, total_score: 78, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
+    { id: 'fr_300_mth_343', student_id: 'b3000004-0000-0000-0000-000000000004', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 22, exam_score: 50, total_score: 72, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' },
 
     // ── 400L Student: Chukwuebuka Obi (2022/234567) ───────────────────
-    {
-      id: 'fr1',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      ca_score: 21,
-      exam_score: 52,
-      total_score: 73,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2022/23'
-    },
-    {
-      id: 'fr4',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c2010000-0000-0000-0000-000000000201',
-      ca_score: 22,
-      exam_score: 54,
-      total_score: 76,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2023/24'
-    },
-    {
-      id: 'fr7',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c2020000-0000-0000-0000-000000000202',
-      ca_score: 23,
-      exam_score: 51,
-      total_score: 74,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2023/24'
-    },
-    {
-      id: 'fr10',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c3430000-0000-0000-0000-000000000343',
-      ca_score: 24,
-      exam_score: 56,
-      total_score: 80,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2024/25'
-    },
-    {
-      id: 'fr12',
-      student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba',
-      course_id: 'c4140000-0000-0000-0000-000000000414',
-      ca_score: 25,
-      exam_score: 58,
-      total_score: 83,
-      grade: 'A',
-      grade_point: 5.0,
-      status: 'approved',
-      session: '2025/26'
-    }
+    { id: 'fr1', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c1010000-0000-0000-0000-000000000101', ca_score: 21, exam_score: 52, total_score: 73, grade: 'A', grade_point: 5.0, status: 'approved', session: '2022/23' },
+    { id: 'fr4', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2010000-0000-0000-0000-000000000201', ca_score: 22, exam_score: 54, total_score: 76, grade: 'A', grade_point: 5.0, status: 'approved', session: '2023/24' },
+    { id: 'fr7', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c2020000-0000-0000-0000-000000000202', ca_score: 23, exam_score: 51, total_score: 74, grade: 'A', grade_point: 5.0, status: 'approved', session: '2023/24' },
+    { id: 'fr10', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c3430000-0000-0000-0000-000000000343', ca_score: 24, exam_score: 56, total_score: 80, grade: 'A', grade_point: 5.0, status: 'approved', session: '2024/25' },
+    { id: 'fr12', student_id: 'b1111111-bbbb-bbbb-bbbb-bbbbbbbbbbba', course_id: 'c4140000-0000-0000-0000-000000000414', ca_score: 25, exam_score: 58, total_score: 83, grade: 'A', grade_point: 5.0, status: 'approved', session: '2025/26' }
   ],
   hod_profiles: [
     {
@@ -446,20 +364,7 @@ const initialSeedData = {
       signature_url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50"><text x="10" y="35" font-family="cursive" font-size="24" fill="%231E3A8A">M.Bello</text></svg>'
     }
   ],
-  result_distributions: [
-    {
-      id: 'rd1',
-      course_id: 'c1010000-0000-0000-0000-000000000101',
-      session: '2025/26',
-      semester: 'first',
-      sent_by_hod_id: 'a2222222-aaaa-aaaa-aaaa-aaaaaaaaaaab',
-      received_by_dept_id: 'd2222222-2222-2222-2222-222222222222',
-      status: 'sent',
-      sent_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-      acknowledged_at: null,
-      acknowledged_by_id: null
-    }
-  ],
+  result_distributions: [],
   cgpa_records: [
     {
       id: 'cg_100',
