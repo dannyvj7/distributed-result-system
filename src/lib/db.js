@@ -414,7 +414,50 @@ function getLocalData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(initialSeedData))
       return initialSeedData
     }
-    return JSON.parse(raw)
+    const parsed = JSON.parse(raw)
+    let modified = false
+
+    // Auto-repair missing students from initialSeedData
+    if (!parsed.students) parsed.students = []
+    const existingStudentIds = new Set(parsed.students.map(s => s.id))
+    for (const s of initialSeedData.students) {
+      if (!existingStudentIds.has(s.id)) {
+        parsed.students.push(s)
+        modified = true
+      }
+    }
+
+    // Auto-repair missing enrollments from initialSeedData
+    if (!parsed.enrollments) parsed.enrollments = []
+    const existingEnrollments = new Set(parsed.enrollments.map(e => `${e.student_id}_${e.course_id}`))
+    for (const e of initialSeedData.enrollments) {
+      if (!existingEnrollments.has(`${e.student_id}_${e.course_id}`)) {
+        parsed.enrollments.push(e)
+        modified = true
+      }
+    }
+
+    // Auto-repair missing final_results from initialSeedData
+    if (!parsed.final_results) parsed.final_results = []
+    const existingFinals = new Set(parsed.final_results.map(f => `${f.student_id}_${f.course_id}`))
+    for (const f of initialSeedData.final_results) {
+      if (!existingFinals.has(`${f.student_id}_${f.course_id}`)) {
+        parsed.final_results.push(f)
+        modified = true
+      }
+    }
+
+    // Auto-repair missing departments
+    if (!parsed.departments || parsed.departments.length < initialSeedData.departments.length) {
+      parsed.departments = initialSeedData.departments
+      modified = true
+    }
+
+    if (modified) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+    }
+
+    return parsed
   } catch (err) {
     return initialSeedData
   }
@@ -1409,14 +1452,19 @@ export async function resetDemoWorkflow(courseCode = 'COS 101', stage = 'hod') {
   // 1b. Clear all complaints to fresh clean state
   local.complaints = []
 
-  // 2. Reset final_results status
+  // 1c. Re-seed enrollments for this course from initialSeedData to ensure all taking departments are present
+  const seedEnrs = initialSeedData.enrollments.filter(e => e.course_id === courseId)
+  const otherEnrs = (local.enrollments || []).filter(e => e.course_id !== courseId)
+  local.enrollments = [...otherEnrs, ...seedEnrs]
+
+  // 1d. Re-seed final_results for this course from initialSeedData
+  const seedFinals = initialSeedData.final_results.filter(f => f.course_id === courseId)
+  const otherFinals = (local.final_results || []).filter(f => f.course_id !== courseId)
   const targetStatus = stage === 'lecturer' ? 'draft' : 'approved'
-  local.final_results = (local.final_results || []).map(r => {
-    if (r.course_id === courseId) {
-      return { ...r, status: targetStatus }
-    }
-    return r
-  })
+  local.final_results = [
+    ...otherFinals,
+    ...seedFinals.map(f => ({ ...f, status: targetStatus }))
+  ]
 
   saveLocalData(local)
 

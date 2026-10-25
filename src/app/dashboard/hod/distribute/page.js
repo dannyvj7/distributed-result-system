@@ -113,10 +113,18 @@ export default function HodDistributePage() {
       type: 'success',
       text: res.message || `${selectedCourse.code} reset for live distribution demo!`
     })
-    const updatedDists = await getResultDistributions()
-    const updatedFinals = await getFinalResults()
+    const [updatedDists, updatedFinals, updatedEnrs, updatedStuds, updatedDepts] = await Promise.all([
+      getResultDistributions(),
+      getFinalResults(),
+      getEnrollments(),
+      getStudents(),
+      getDepartments()
+    ])
     setDistributions(updatedDists)
     setFinalResults(updatedFinals)
+    setEnrollments(updatedEnrs)
+    setStudents(updatedStuds)
+    setDepartments(updatedDepts)
   }
 
   return (
