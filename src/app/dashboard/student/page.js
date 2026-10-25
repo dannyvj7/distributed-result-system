@@ -5,7 +5,7 @@ import Link from 'next/link'
 import DashboardLayout from '../../../components/DashboardLayout'
 import { useAuth } from '../../../lib/authContext'
 import { getStudents, getCourses, getFinalResults, getCgpaRecord, getDepartments, getComplaints, recomputeStudentCGPA } from '../../../lib/db'
-import { normalizeRegNumber } from '../../../lib/grading'
+import { normalizeRegNumber, calculateGrade } from '../../../lib/grading'
 import {
   GraduationCap,
   Award,
@@ -50,9 +50,27 @@ export default function StudentDashboardPage() {
           setDepartment(dept)
 
           // Approved results only for student view
-          const studentResults = finals.filter(
+          const rawResults = finals.filter(
             r => r.student_id === activeStudent.id && (r.status === 'approved' || r.status === 'distributed')
           )
+          const studentResults = rawResults.map(r => {
+            const ca = Number(r.ca_score || 0)
+            const exam = Number(r.exam_score || 0)
+            const total = (r.total_score !== undefined && r.total_score !== null && !isNaN(Number(r.total_score)))
+              ? Number(r.total_score)
+              : (ca + exam)
+            const { grade, gradePoint } = calculateGrade(total)
+            return {
+              ...r,
+              ca_score: ca,
+              exam_score: exam,
+              total_score: total,
+              grade: r.grade || grade,
+              grade_point: (r.grade_point !== undefined && r.grade_point !== null && !isNaN(Number(r.grade_point)))
+                ? Number(r.grade_point)
+                : gradePoint
+            }
+          })
           setResults(studentResults)
 
           let cgpa = await getCgpaRecord(activeStudent.id)

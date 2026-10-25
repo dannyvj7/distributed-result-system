@@ -37,9 +37,9 @@ export default function StudentCgpaPage() {
           )
           setResults(studentResults)
 
-          let rec = await getCgpaRecord(activeStudent.id)
-          if (!rec && studentResults.length > 0) {
-            rec = await recomputeStudentCGPA(activeStudent.id)
+          let rec = await recomputeStudentCGPA(activeStudent.id)
+          if (!rec) {
+            rec = await getCgpaRecord(activeStudent.id)
           }
           setCgpaRecord(rec)
         }

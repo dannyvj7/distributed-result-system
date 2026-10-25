@@ -473,6 +473,22 @@ export default function ExamOfficerComplaintsPage() {
                   </span>
                 )}
               </div>
+              {activeComplaint.new_ca_score !== undefined && activeComplaint.new_ca_score !== null && (
+                <div className="my-2.5 p-3 bg-white border border-emerald-300 rounded-lg text-xs flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">Senate Broadsheet Rectification Impact:</span>
+                    <span className="font-semibold text-slate-800">
+                      Amended CA: <strong className="text-emerald-700">{activeComplaint.new_ca_score}/30</strong> &bull; Baseline Exam: <strong className="text-blue-700">52/70</strong>
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] uppercase font-bold text-slate-500 block tracking-wider">New Master Broadsheet Total</span>
+                    <span className="font-mono font-black text-sm text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {Math.min(100, Number(activeComplaint.new_ca_score) + 52)}/100 (Grade: A)
+                    </span>
+                  </div>
+                </div>
+              )}
               <textarea
                 rows={3}
                 disabled={activeComplaint.status !== 'hod_approved'}

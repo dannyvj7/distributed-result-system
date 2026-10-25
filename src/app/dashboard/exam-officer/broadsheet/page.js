@@ -5,6 +5,7 @@ import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { getDepartments, getStudents, getCourses, getFinalResults, getCgpaRecord } from '../../../../lib/db'
+import { calculateGrade } from '../../../../lib/grading'
 import { FileSpreadsheet, Printer, Download, Search, CheckCircle2, School } from 'lucide-react'
 
 export default function ExamOfficerBroadsheetPage() {
@@ -29,7 +30,25 @@ export default function ExamOfficerBroadsheetPage() {
         setDepartments(depts)
         setStudents(studs)
         setCourses(crs)
-        setFinalResults(finals)
+        const processedFinals = finals.map(r => {
+          const ca = Number(r.ca_score || 0)
+          const exam = Number(r.exam_score || 0)
+          const total = (r.total_score !== undefined && r.total_score !== null && !isNaN(Number(r.total_score)))
+            ? Number(r.total_score)
+            : (ca + exam)
+          const { grade, gradePoint } = calculateGrade(total)
+          return {
+            ...r,
+            ca_score: ca,
+            exam_score: exam,
+            total_score: total,
+            grade: r.grade || grade,
+            grade_point: (r.grade_point !== undefined && r.grade_point !== null && !isNaN(Number(r.grade_point)))
+              ? Number(r.grade_point)
+              : gradePoint
+          }
+        })
+        setFinalResults(processedFinals)
         if (depts.length > 0) setSelectedDeptId(depts[0].id)
       } finally {
         setLoading(false)

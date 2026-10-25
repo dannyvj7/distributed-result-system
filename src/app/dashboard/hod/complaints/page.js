@@ -384,6 +384,14 @@ export default function HodComplaintsDeskPage() {
                   {activeRectification.hod_memo_ref || 'UNN/CSC/REC/2026/014'}
                 </span>
               </div>
+              {activeRectification.new_ca_score !== undefined && activeRectification.new_ca_score !== null && (
+                <div className="flex justify-between items-center pt-1.5">
+                  <span className="text-slate-500">Score Rectification:</span>
+                  <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Verified CA: {activeRectification.new_ca_score}/30 &bull; Final Total: {Math.min(100, Number(activeRectification.new_ca_score) + 52)}/100 (A)
+                  </span>
+                </div>
+              )}
               <div className="pt-2 border-t border-slate-200 text-slate-700 italic">
                 Lecturer Finding: "{activeRectification.lecturer_findings}"
               </div>

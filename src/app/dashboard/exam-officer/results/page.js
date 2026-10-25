@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import DashboardLayout from '../../../../components/DashboardLayout'
 import { useAuth } from '../../../../lib/authContext'
 import { getResultDistributions, getCourses, getDepartments, getFinalResults, getStudents, acknowledgeExamOfficeReceipt } from '../../../../lib/db'
+import { calculateGrade } from '../../../../lib/grading'
 import { BookOpen, Search, ShieldCheck, Clock, Building2, Filter, Eye, CheckCircle2, CheckCircle } from 'lucide-react'
 
 export default function ExamOfficerResultsPage() {
@@ -35,7 +36,25 @@ export default function ExamOfficerResultsPage() {
       setDistributions(dists)
       setCourses(crs)
       setDepartments(depts)
-      setFinalResults(finals)
+      const processedFinals = finals.map(r => {
+        const ca = Number(r.ca_score || 0)
+        const exam = Number(r.exam_score || 0)
+        const total = (r.total_score !== undefined && r.total_score !== null && !isNaN(Number(r.total_score)))
+          ? Number(r.total_score)
+          : (ca + exam)
+        const { grade, gradePoint } = calculateGrade(total)
+        return {
+          ...r,
+          ca_score: ca,
+          exam_score: exam,
+          total_score: total,
+          grade: r.grade || grade,
+          grade_point: (r.grade_point !== undefined && r.grade_point !== null && !isNaN(Number(r.grade_point)))
+            ? Number(r.grade_point)
+            : gradePoint
+        }
+      })
+      setFinalResults(processedFinals)
       setStudents(studs)
     } finally {
       setLoading(false)
