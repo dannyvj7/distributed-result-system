@@ -51,12 +51,17 @@ export default function HodDistributePage() {
 
   const selectedCourse = courses.find(c => c.id === selectedCourseId)
 
-  // Find all departments whose students took this course
-  // We check enrollments or final results
+  const activeSession = selectedCourse?.session || '2025/26'
+
+  // Find all departments whose current cohort took this course in the active academic session
   const courseEnrolledStudentIds = [
     ...new Set([
-      ...enrollments.filter(e => e.course_id === selectedCourseId).map(e => e.student_id),
-      ...finalResults.filter(f => f.course_id === selectedCourseId).map(f => f.student_id)
+      ...enrollments
+        .filter(e => e.course_id === selectedCourseId && (!e.session || e.session === activeSession))
+        .map(e => e.student_id),
+      ...finalResults
+        .filter(f => f.course_id === selectedCourseId && (!f.session || f.session === activeSession))
+        .map(f => f.student_id)
     ])
   ]
 

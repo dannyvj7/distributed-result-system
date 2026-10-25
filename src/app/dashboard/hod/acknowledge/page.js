@@ -97,6 +97,7 @@ export default function HodAcknowledgePage() {
   const targetDeptId = selectedDist?.received_by_dept_id || user?.department_id
   const courseStudents = finalResults.filter(r => {
     if (r.course_id !== selectedDist?.course_id) return false
+    if (selectedDist?.session && r.session && r.session !== selectedDist.session) return false
     const s = students.find(stud => stud.id === r.student_id)
     return s && (!targetDeptId || s.department_id === targetDeptId)
   })
